@@ -1,0 +1,46 @@
+<div class="background-blur"></div>
+
+<div class="product-container">
+  
+  <div class="header">
+    <h2>Product List</h2>
+    
+    <button *ngIf="isOwner" 
+            (click)="navigateToAddProduct()" 
+            class="add-btn">
+      + Add New Product
+    </button>
+  </div>
+  
+  <div *ngIf="products.length === 0" class="empty-state">
+    <p>No products found. Please add some!</p>
+  </div>
+
+  <div class="product-grid">
+    
+    <div *ngFor="let product of products" class="product-card">
+      
+      <div class="image-container">
+        <img [src]="product.imageUrl || 'https://placehold.co/200'" 
+             alt="{{ product.name }}" 
+             class="product-img">
+      </div>
+
+      <div class="product-details">
+        <h3>{{ product.name }}</h3>
+        
+        <p class="description">{{ product.description }}</p>
+        
+        <div class="info-row">
+          <span class="stock-badge">Stock: {{ product.availableStockKg }} kg</span>
+        </div>
+
+        <div class="price-row">
+          <span class="price">₹{{ product.pricePerKg }} <small>/kg</small></span>
+          <button class="buy-btn">Buy</button>
+        </div>
+      </div>
+
+    </div>
+    </div>
+</div>
