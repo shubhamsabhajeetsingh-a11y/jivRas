@@ -1,11 +1,11 @@
 package com.jivRas.groceries.config;
 
 import com.jivRas.groceries.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value; // Import for @Value
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -14,6 +14,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.cors.CorsConfiguration; // Import
+import org.springframework.web.cors.CorsConfigurationSource; // Import
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource; // Import
+
+import java.util.List; // Import
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -23,6 +28,10 @@ public class SecurityConfig {
 
     private final UserRepository userRepository;
 
+    // 1. Read the Universal URL from application.properties
+    @Value("${frontend.url:http://localhost:4200}") // Default to 4200 if missing
+    private String frontendUrl;
+
     public SecurityConfig(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -30,6 +39,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // 2. ENABLE CORS HERE (Crucial Step)
+                .cors(withDefaults()) 
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                                 .anyRequest().permitAll()
@@ -37,6 +48,23 @@ public class SecurityConfig {
                 .httpBasic(withDefaults());
 
         return http.build();
+    }
+
+    // 3. Define the Global CORS Rules for Spring Security
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // Use the variable we defined at the top
+        configuration.setAllowedOrigins(List.of(frontendUrl)); 
+        
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Apply to ALL paths
+        return source;
     }
 
     @Bean
