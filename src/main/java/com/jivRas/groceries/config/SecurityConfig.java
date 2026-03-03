@@ -36,16 +36,35 @@ public class SecurityConfig {
         this.userRepository = userRepository;
     }
 
+//    @Bean
+//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+//        http
+//                // 2. ENABLE CORS HERE (Crucial Step)
+//                .cors(withDefaults()) 
+//                .csrf(csrf -> csrf.disable())
+//                .authorizeHttpRequests(auth -> auth
+////                                .anyRequest().permitAll()
+////                		.requestMatchers("/h2-console/**").permitAll()
+//                        .anyRequest().permitAll()
+//                )
+//                .httpBasic(withDefaults());
+//
+//        return http.build();
+//    }
+    
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 2. ENABLE CORS HERE (Crucial Step)
-                .cors(withDefaults()) 
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                                .anyRequest().permitAll()
-                )
-                .httpBasic(withDefaults());
+            .cors(withDefaults())
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/h2-console/**").permitAll() // allow H2
+                    .anyRequest().permitAll()
+            )
+            .headers(headers -> headers
+                    .frameOptions(frame -> frame.sameOrigin()) // allow iframe
+            )
+            .httpBasic(withDefaults());
 
         return http.build();
     }

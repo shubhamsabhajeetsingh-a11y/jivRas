@@ -15,5 +15,10 @@
     <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 
     <button type="submit" [disabled]="loginForm.invalid">Login</button>
+    <p>
+      Don't have an account?
+      <a routerLink="/create-users">Create New User</a>
+    </p>
+
   </form>
 </div>
