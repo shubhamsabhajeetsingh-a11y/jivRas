@@ -1,13 +1,8 @@
 package com.jivRas.groceries.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.jivRas.groceries.entity.Product;
-import com.jivRas.groceries.kaafka.KafkaEventProducer;
 import com.jivRas.groceries.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -32,30 +26,6 @@ import lombok.RequiredArgsConstructor;
 public class ProductController {
 
 	private final ProductService productService;
-	private final AuthenticationManager authenticationManager;
-	private final KafkaEventProducer kafkaEventProducer;
-
-	@PostMapping("/login")
-	public ResponseEntity<String> login(@RequestBody Map<String, String> credentials) {
-		try {
-			String username = credentials.get("username");
-			String password = credentials.get("password");
-
-			Authentication authentication = authenticationManager
-					.authenticate(new UsernamePasswordAuthenticationToken(username, password));
-
-			if (authentication.isAuthenticated()) {
-
-				kafkaEventProducer.sendLoginEvent(username);
-
-				return ResponseEntity.ok("Login successful");
-			} else {
-				return ResponseEntity.status(401).body("Invalid credentials");
-			}
-		} catch (AuthenticationException e) {
-			return ResponseEntity.status(401).body("Invalid credentials");
-		}
-	}
 
 	// Add new product
 	@PostMapping
