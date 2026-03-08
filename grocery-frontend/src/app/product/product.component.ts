@@ -11,33 +11,41 @@ import { Router } from '@angular/router';
   styleUrls: ['./product.component.css']
 })
 export class ProductComponent implements OnInit {
-  // 1. FIX: We define a simple array 'products', NOT 'products$'
+ 
   products: any[] = []; 
   isOwner = false; 
 
   constructor(
     private productService: ProductService, 
     private router: Router,
-    // 2. FIX: We inject 'cdr' here so 'this.cdr' works later
+   
     private cdr: ChangeDetectorRef, 
     @Inject(PLATFORM_ID) private platformId: Object 
   ) {}
 
+ logout(): void {
+  localStorage.removeItem("accessToken");   // ✅ matches login save
+  localStorage.removeItem("refreshToken");  // ✅ clear refresh too
+  localStorage.removeItem("isOwner");
+  this.router.navigate(['/login']);
+}
+
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
-      this.isOwner = localStorage.getItem('isOwner') === 'true';
+      const isOwnerStr = localStorage.getItem('isOwner');
+      console.log('isOwner from localStorage:', isOwnerStr);
+      this.isOwner = isOwnerStr === 'true';
+      console.log('isOwner boolean:', this.isOwner);
       this.loadProducts();
     }
   }
 
   loadProducts(): void {
+    console.log('Loading products...');
     this.productService.getAllProducts().subscribe({
       next: (data) => {
-        // 3. FIX: Now 'this.products' exists and works
+        console.log('Products loaded successfully:', data);
         this.products = data;
-        console.log('Products loaded:', data);
-        
-        // 4. FIX: Now 'this.cdr' exists and works
         this.cdr.detectChanges(); 
       },
       error: (error) => {
@@ -49,4 +57,5 @@ export class ProductComponent implements OnInit {
   navigateToAddProduct() {
     this.router.navigate(['/add-product']);
   }
+  
 }

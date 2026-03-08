@@ -10,6 +10,9 @@
             class="add-btn">
       + Add New Product
     </button>
+      <button (click)="logout()" class="logout-btn">
+      Logout
+    </button>
   </div>
   
   <div *ngIf="products.length === 0" class="empty-state">

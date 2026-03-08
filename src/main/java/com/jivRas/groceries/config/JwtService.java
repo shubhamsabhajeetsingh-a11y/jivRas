@@ -6,9 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
+import com.jivRas.groceries.repository.UserRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -17,18 +20,57 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 
-@Component
+@Service
 public class JwtService {
-
+	
+	@Autowired
+	public UserRepository repository;
+	
+	
 	@Value("${jwt.secret}")
 	public String SECRET;
 	
 	
-	public String generateToken(String email) { // Use email as username
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, email);
-    }
+	/*
+	 * public String generateToken(String email) { // Use email as username
+	 * Map<String, Object> claims = new HashMap<>(); claims.put("role",
+	 * repository.findByUserDetails(email).getRole()); return createToken(claims,
+	 * email); }
+	 */
 
+	
+	public String generateToken(String username, String role) {
+
+	    Map<String, Object> claims = new HashMap<>();
+	    claims.put("role", role);
+
+	    return createToken(claims, username);
+	}
+	
+	public String generateAccessToken(String username, String role) {
+
+	    Map<String, Object> claims = new HashMap<>();
+	    claims.put("role", role);
+
+	    return Jwts.builder()
+	            .setClaims(claims)
+	            .setSubject(username)
+	            .setIssuedAt(new Date())
+	            .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15)) // 15 min
+	            .signWith(getSignKey(), SignatureAlgorithm.HS256)
+	            .compact();
+	}
+
+	public String generateRefreshToken(String username) {
+
+	    return Jwts.builder()
+	            .setSubject(username)
+	            .setIssuedAt(new Date())
+	            .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7)) // 7 days
+	            .signWith(getSignKey(), SignatureAlgorithm.HS256)
+	            .compact();
+	}
+	
     private String createToken(Map<String, Object> claims, String email) {
         return Jwts.builder()
                 .setClaims(claims)

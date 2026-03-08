@@ -23,23 +23,31 @@ export class LoginComponent {
     });
   }
 
-  onSubmit(): void {
-      if (this.loginForm.valid) {
-        //const credentials = { username: this.username, password: this.password };
-        const loginData = this.loginForm.value;
+onSubmit(): void {
 
-        this.http.post(`${environment.apiUrl}/api/products/login`, loginData, { responseType: 'text' })
-          .subscribe({
-            next: (response) => {
-              console.log('Login successful:', response);
-              // Navigate to products page on success
-              this.router.navigate(['/products']); 
-            },
-            error: (err) => {
-              console.error('Login failed:', err);
-              this.errorMessage = 'Invalid username or password.';
-            }
-          });
-      }
+  if (this.loginForm.valid) {
+
+    const loginData = this.loginForm.value;
+
+  this.http.post<any>(`${environment.apiUrl}/api/users/login`, loginData)
+  .subscribe({
+    next: (response: any) => {
+      console.log('Login successful:', response);
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      
+      const isOwner = response.role === 'ROLE_OWNER';
+      console.log('Role from response:', response.role);
+      console.log('Is Owner:', isOwner);
+      localStorage.setItem('isOwner', String(isOwner));
+
+      this.router.navigate(['/products']); 
+    },
+    error: (err) => {
+      console.error('Login failed:', err);
+      this.errorMessage = 'Invalid username or password.';
     }
+  });
+  }
+}
 }
