@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -25,6 +25,7 @@ export class CheckoutComponent implements OnInit {
     private cartService: CartService,
     private orderService: OrderService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -54,9 +55,11 @@ export class CheckoutComponent implements OnInit {
         if (!data.items || data.items.length === 0) {
           this.router.navigate(['/cart']);
         }
+        this.cdr.detectChanges();
       },
       error: () => {
         this.loading = false;
+        this.cdr.detectChanges();
         this.router.navigate(['/cart']);
       }
     });
@@ -78,6 +81,7 @@ export class CheckoutComponent implements OnInit {
       next: (order) => {
         this.submitting = false;
         this.cartService.resetCartCount();
+        this.cdr.detectChanges();
         // Navigate to order confirmation with the order ID
         this.router.navigate(['/order-confirmation', order.orderId]);
       },
@@ -85,6 +89,7 @@ export class CheckoutComponent implements OnInit {
         this.submitting = false;
         this.errorMessage = err.error?.message || 'Checkout failed. Please try again.';
         console.error('Checkout error:', err);
+        this.cdr.detectChanges();
       }
     });
   }

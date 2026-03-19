@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrderService } from '../core/services/order.service';
@@ -20,6 +20,7 @@ export class OrderConfirmationComponent implements OnInit {
     private route: ActivatedRoute,
     private orderService: OrderService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -39,11 +40,13 @@ export class OrderConfirmationComponent implements OnInit {
       next: (data) => {
         this.order = data;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.errorMessage = 'Could not load order details.';
         this.loading = false;
         console.error(err);
+        this.cdr.detectChanges();
       }
     });
   }

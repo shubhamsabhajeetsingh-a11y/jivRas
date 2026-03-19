@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +20,7 @@ export class CartComponent implements OnInit {
   constructor(
     private cartService: CartService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -35,10 +36,12 @@ export class CartComponent implements OnInit {
       next: (data) => {
         this.cart = data;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.cart = null;
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -48,10 +51,12 @@ export class CartComponent implements OnInit {
     this.cartService.updateCartItem(item.cartItemId, newQuantity).subscribe({
       next: (data) => {
         this.cart = data;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.errorMessage = 'Failed to update quantity.';
         console.error(err);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -60,10 +65,12 @@ export class CartComponent implements OnInit {
     this.cartService.removeCartItem(item.cartItemId).subscribe({
       next: (data) => {
         this.cart = data;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.errorMessage = 'Failed to remove item.';
         console.error(err);
+        this.cdr.detectChanges();
       }
     });
   }
