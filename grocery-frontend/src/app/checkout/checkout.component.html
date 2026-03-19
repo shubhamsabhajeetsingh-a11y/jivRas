@@ -1,0 +1,93 @@
+<div class="checkout-page">
+  <div class="checkout-container">
+
+    <button class="back-btn" (click)="goBack()">← Back to Cart</button>
+
+    <h2>📦 Checkout</h2>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading">Loading order summary...</div>
+
+    <div *ngIf="!loading && cart" class="checkout-content">
+
+      <!-- Order Summary -->
+      <div class="order-summary">
+        <h3>Order Summary</h3>
+        <div *ngFor="let item of cart.items" class="summary-item">
+          <span>{{ item.productName }} × {{ item.quantity }} kg</span>
+          <span>₹{{ item.subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="summary-total">
+          <span>Total</span>
+          <span>₹{{ cart.totalAmount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Delivery Form -->
+      <div class="delivery-form">
+        <h3>Delivery Details</h3>
+
+        <form [formGroup]="checkoutForm" (ngSubmit)="onSubmit()">
+
+          <div class="form-group">
+            <label>Full Name</label>
+            <input formControlName="customerName" type="text" placeholder="Enter your full name">
+            <div class="error" *ngIf="checkoutForm.get('customerName')?.touched && checkoutForm.get('customerName')?.invalid">
+              Name is required (min 2 characters)
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input formControlName="mobile" type="tel" placeholder="10 digit mobile number" maxlength="10">
+            <div class="error" *ngIf="checkoutForm.get('mobile')?.touched && checkoutForm.get('mobile')?.invalid">
+              Enter a valid 10-digit mobile number
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Address</label>
+            <input formControlName="addressLine" type="text" placeholder="House no, Street, Area">
+            <div class="error" *ngIf="checkoutForm.get('addressLine')?.touched && checkoutForm.get('addressLine')?.invalid">
+              Address is required
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>City</label>
+              <input formControlName="city" type="text" placeholder="City">
+              <div class="error" *ngIf="checkoutForm.get('city')?.touched && checkoutForm.get('city')?.invalid">
+                City is required
+              </div>
+            </div>
+
+            <div class="form-group half">
+              <label>State</label>
+              <input formControlName="state" type="text" placeholder="State">
+              <div class="error" *ngIf="checkoutForm.get('state')?.touched && checkoutForm.get('state')?.invalid">
+                State is required
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Pincode</label>
+            <input formControlName="pincode" type="text" placeholder="6-digit pincode" maxlength="6">
+            <div class="error" *ngIf="checkoutForm.get('pincode')?.touched && checkoutForm.get('pincode')?.invalid">
+              Enter a valid 6-digit pincode
+            </div>
+          </div>
+
+          <div *ngIf="errorMessage" class="error-msg">{{ errorMessage }}</div>
+
+          <button type="submit" class="place-order-btn" [disabled]="submitting">
+            {{ submitting ? 'Placing Order...' : 'Place Order' }}
+          </button>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>

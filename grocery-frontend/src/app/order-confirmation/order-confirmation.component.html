@@ -1,0 +1,48 @@
+<div class="confirmation-page">
+  <div class="confirmation-container">
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading">Loading order details...</div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="error-msg">{{ errorMessage }}</div>
+
+    <!-- Order Details -->
+    <div *ngIf="!loading && order" class="order-card">
+      
+      <div class="success-icon">✅</div>
+      <h2>Order Placed Successfully!</h2>
+      <p class="order-id">Order #{{ order.orderId }}</p>
+
+      <div class="order-info">
+        
+        <div class="info-section">
+          <h4>📦 Order Items</h4>
+          <div *ngFor="let item of order.items" class="order-item">
+            <span>{{ item.productName }} × {{ item.quantityKg }} kg</span>
+            <span>₹{{ item.subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="order-total">
+            <span>Total Amount</span>
+            <span>₹{{ order.totalAmount | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h4>🚚 Delivery Details</h4>
+          <p><strong>Name:</strong> {{ order.customerName }}</p>
+          <p><strong>Mobile:</strong> {{ order.mobile }}</p>
+          <p><strong>Address:</strong> {{ order.addressLine }}, {{ order.city }}, {{ order.state }} - {{ order.pincode }}</p>
+          <p><strong>Status:</strong> <span class="status-badge">{{ order.orderStatus }}</span></p>
+          <p><strong>Estimated Delivery:</strong> {{ order.estimatedDeliveryDays }} days</p>
+        </div>
+
+      </div>
+
+      <button class="continue-btn" (click)="goToProducts()">
+        Continue Shopping →
+      </button>
+
+    </div>
+  </div>
+</div>

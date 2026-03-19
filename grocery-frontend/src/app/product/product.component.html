@@ -3,16 +3,28 @@
 <div class="product-container">
   
   <div class="header">
-    <h2>Product List</h2>
+    <h2>🛒 JivRas Groceries</h2>
     
-    <button *ngIf="isOwner" 
-            (click)="navigateToAddProduct()" 
-            class="add-btn">
-      + Add New Product
-    </button>
-      <button (click)="logout()" class="logout-btn">
-      Logout
-    </button>
+    <div class="header-actions">
+      <button *ngIf="isEmployee" 
+              (click)="navigateToAddProduct()" 
+              class="add-btn">
+        + Add Product
+      </button>
+
+      <button (click)="navigateToCart()" class="cart-btn">
+        🛒 Cart
+        <span *ngIf="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
+      </button>
+
+      <button *ngIf="isLoggedIn" (click)="logout()" class="logout-btn">
+        Logout
+      </button>
+
+      <a *ngIf="!isLoggedIn" routerLink="/login" class="login-link-btn">
+        Login
+      </a>
+    </div>
   </div>
   
   <div *ngIf="products.length === 0" class="empty-state">
@@ -35,15 +47,24 @@
         <p class="description">{{ product.description }}</p>
         
         <div class="info-row">
-          <span class="stock-badge">Stock: {{ product.availableStockKg }} kg</span>
+          <span class="stock-badge" [class.low-stock]="product.availableStockKg < 10">
+            Stock: {{ product.availableStockKg }} kg
+          </span>
         </div>
 
         <div class="price-row">
           <span class="price">₹{{ product.pricePerKg }} <small>/kg</small></span>
-          <button class="buy-btn">Buy</button>
+          
+          <button *ngIf="!isEmployee"
+                  class="buy-btn"
+                  [class.added]="addedProductId === product.id"
+                  [disabled]="addedProductId === product.id || product.availableStockKg <= 0"
+                  (click)="addToCart(product)">
+            {{ addedProductId === product.id ? '✓ Added!' : 'Add to Cart' }}
+          </button>
         </div>
       </div>
 
     </div>
-    </div>
+  </div>
 </div>

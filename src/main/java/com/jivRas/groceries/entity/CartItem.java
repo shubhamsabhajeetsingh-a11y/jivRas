@@ -10,29 +10,29 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 /**
- * Individual item within an order.
- * Stores a snapshot of product name and price at the time of checkout.
+ * Individual item in a shopping cart.
+ * Stores product reference, quantity, and price snapshot at time of adding.
  */
 @Entity
-@Table(name = "order_items")
 @Data
-public class OrderItem {
+@Table(name = "cart_items")
+public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "order_id")
-    private Order order;
+    @JoinColumn(name = "cart_id")
+    private Cart cart;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id")
-    private Product product;
+    private Long productId;
 
-    /** Snapshot of product name at checkout time */
     private String productName;
 
-    private double quantityKg;
+    /** Quantity in kg */
+    private double quantity;
+
+    /** Price per kg at time of adding to cart */
     private double pricePerKg;
 }

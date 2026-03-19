@@ -1,0 +1,70 @@
+<div class="cart-page">
+  <div class="cart-container">
+    
+    <div class="cart-header">
+      <h2>🛒 Your Cart</h2>
+      <button class="continue-btn" (click)="continueShopping()">
+        ← Continue Shopping
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-state">
+      <p>Loading your cart...</p>
+    </div>
+
+    <!-- Empty Cart -->
+    <div *ngIf="!loading && (!cart || cart.items?.length === 0)" class="empty-cart">
+      <div class="empty-icon">🛒</div>
+      <h3>Your cart is empty</h3>
+      <p>Looks like you haven't added anything yet.</p>
+      <button class="shop-btn" (click)="continueShopping()">Start Shopping</button>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="error-msg">{{ errorMessage }}</div>
+
+    <!-- Cart Items -->
+    <div *ngIf="!loading && cart && cart.items?.length > 0">
+      
+      <div class="cart-items">
+        <div *ngFor="let item of cart.items" class="cart-item">
+          
+          <div class="item-info">
+            <h4>{{ item.productName }}</h4>
+            <p class="item-price">₹{{ item.pricePerKg }} / kg</p>
+          </div>
+
+          <div class="item-quantity">
+            <button class="qty-btn" (click)="updateQuantity(item, item.quantity - 0.5)">−</button>
+            <span class="qty-value">{{ item.quantity }} kg</span>
+            <button class="qty-btn" (click)="updateQuantity(item, item.quantity + 0.5)">+</button>
+          </div>
+
+          <div class="item-subtotal">
+            ₹{{ item.subtotal | number:'1.2-2' }}
+          </div>
+
+          <button class="remove-btn" (click)="removeItem(item)">✕</button>
+        </div>
+      </div>
+
+      <!-- Cart Summary -->
+      <div class="cart-summary">
+        <div class="summary-row">
+          <span>Items</span>
+          <span>{{ cart.items.length }}</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span class="total-amount">₹{{ cart.totalAmount | number:'1.2-2' }}</span>
+        </div>
+        
+        <button class="checkout-btn" (click)="proceedToCheckout()">
+          Proceed to Checkout →
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
