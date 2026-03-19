@@ -24,7 +24,7 @@ export class CreateUsersComponent {
   
   onSubmit(): void {
       if (this.createUserForm.valid) {
-        const userData = [this.createUserForm.value]; // Wrap as list
+        const userData = this.createUserForm.value; // Wrap as list
 
         // Added { responseType: 'text' } so Angular accepts the string response
         this.http.post('http://localhost:8080/api/users/create', userData, { responseType: 'text' })
