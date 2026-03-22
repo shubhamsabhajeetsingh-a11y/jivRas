@@ -6,44 +6,44 @@ import { Router, RouterLink } from '@angular/router';
 import { environment } from '../environments/environment';
 
 @Component({
-  selector: 'app-create-users',
-  templateUrl: './create-users.component.html',
-  styleUrls: ['./create-users.component.css'],
+  selector: 'app-create-employee',
+  templateUrl: './create-employee.component.html',
+  styleUrls: ['./create-employee.component.css'],
   imports: [CommonModule, ReactiveFormsModule, RouterLink]
 })
-export class CreateUsersComponent {
-  createUserForm: FormGroup;
+export class CreateEmployeeComponent {
+  createEmployeeForm: FormGroup;
   successMessage: string = '';
   errorMessage: string = '';
 
   constructor(private fb: FormBuilder, private http: HttpClient, private router: Router) {
-    this.createUserForm = this.fb.group({
+    this.createEmployeeForm = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       mobile: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
       address: ['', Validators.required],
-      email: [''],
+      email: ['', [Validators.required, Validators.email]],
       username: ['', Validators.required],
-      password: ['', [Validators.required, Validators.minLength(4)]]
+      password: ['', [Validators.required, Validators.minLength(4)]],
+      role: ['EMPLOYEE', Validators.required]
     });
   }
 
   onSubmit(): void {
-    if (this.createUserForm.valid) {
-      const userData = this.createUserForm.value;
+    if (this.createEmployeeForm.valid) {
+      const employeeData = this.createEmployeeForm.value;
 
-      this.http.post(`${environment.apiUrl}/api/users/register`, userData, { responseType: 'text' })
+      this.http.post(`${environment.apiUrl}/api/users/register-employee`, employeeData, { responseType: 'text' })
         .subscribe({
           next: (response) => {
-            console.log('Registration response:', response);
-            this.successMessage = 'Account created successfully! Redirecting to login...';
+            console.log('Employee registration response:', response);
+            this.successMessage = response;
             this.errorMessage = '';
-            this.createUserForm.reset();
-            setTimeout(() => this.router.navigate(['/login']), 2000);
+            this.createEmployeeForm.reset({ role: 'EMPLOYEE' });
           },
           error: (err) => {
-            console.error('Registration error:', err);
-            this.errorMessage = err.error || 'Failed to create account. Please try again.';
+            console.error('Employee registration error:', err);
+            this.errorMessage = err.error || 'Failed to create employee. Please try again.';
             this.successMessage = '';
           }
         });

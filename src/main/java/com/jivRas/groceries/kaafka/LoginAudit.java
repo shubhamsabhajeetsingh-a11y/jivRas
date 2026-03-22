@@ -14,18 +14,21 @@ import lombok.NoArgsConstructor;
 @Data
 public class LoginAudit {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String username;
+    private String role;
 
     private LocalDateTime loginTime;
+    private LocalDateTime logoutTime;
     
     public LoginAudit(){}
 
-    public LoginAudit(String username, LocalDateTime loginTime) {
+    public LoginAudit(String username, String role, LocalDateTime loginTime) {
         this.username = username;
+        this.role = role;
         this.loginTime = loginTime;
     }
 

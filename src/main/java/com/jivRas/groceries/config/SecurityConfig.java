@@ -54,6 +54,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/cart/**").permitAll()
                 .requestMatchers("/api/orders/**").permitAll()
 
+                // Location data: public
+                .requestMatchers("/api/locations/**").permitAll()
+
                 // Images served from /images/**
                 .requestMatchers("/images/**").permitAll()
 

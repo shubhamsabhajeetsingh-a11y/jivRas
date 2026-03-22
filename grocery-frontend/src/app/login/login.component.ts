@@ -40,7 +40,11 @@ export class LoginComponent {
             // Remove guestId once logged in — cart will use username instead
             localStorage.removeItem('guestId');
 
-            this.router.navigate(['/products']);
+            if (response.role === 'EMPLOYEE' || response.role === 'ADMIN') {
+              this.router.navigate(['/add-product']);
+            } else {
+              this.router.navigate(['/products']);
+            }
           },
           error: (err) => {
             console.error('Login failed:', err);

@@ -53,35 +53,79 @@
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group half">
-              <label>City</label>
-              <input formControlName="city" type="text" placeholder="City">
-              <div class="error" *ngIf="checkoutForm.get('city')?.touched && checkoutForm.get('city')?.invalid">
-                City is required
+          <!-- STATE searchable dropdown -->
+          <div class="form-group dropdown-wrapper">
+            <label>State</label>
+            <div class="dropdown-trigger" (click)="toggleStateDropdown($event)"
+                 [class.has-value]="selectedState"
+                 [class.is-open]="stateDropdownOpen">
+              <span class="dropdown-value">{{ selectedState || 'Select State' }}</span>
+              <span class="dropdown-arrow">▾</span>
+            </div>
+            <div class="dropdown-panel" *ngIf="stateDropdownOpen" (click)="$event.stopPropagation()">
+              <input type="text" class="dropdown-search" [(ngModel)]="stateSearch"
+                     [ngModelOptions]="{standalone: true}"
+                     (input)="filterStates()" placeholder="🔍 Search state..." autofocus>
+              <div class="dropdown-list">
+                <div class="dropdown-item" *ngFor="let state of filteredStates"
+                     (click)="selectState(state)">
+                  {{ state }}
+                </div>
+                <div class="dropdown-empty" *ngIf="filteredStates.length === 0">
+                  No states found
+                </div>
               </div>
             </div>
-
-            <div class="form-group half">
-              <label>State</label>
-              <input formControlName="state" type="text" placeholder="State">
-              <div class="error" *ngIf="checkoutForm.get('state')?.touched && checkoutForm.get('state')?.invalid">
-                State is required
-              </div>
+            <div class="error" *ngIf="checkoutForm.get('state')?.touched && !selectedState">
+              State is required
             </div>
           </div>
 
+          <!-- CITY searchable dropdown -->
+          <div class="form-group dropdown-wrapper">
+            <label>City</label>
+            <div class="dropdown-trigger" (click)="toggleCityDropdown($event)"
+                 [class.has-value]="selectedCity"
+                 [class.is-open]="cityDropdownOpen"
+                 [class.disabled]="!selectedState">
+              <span class="dropdown-value">{{ selectedCity || (selectedState ? 'Select City' : 'Select state first') }}</span>
+              <span class="dropdown-arrow">▾</span>
+            </div>
+            <div class="dropdown-panel" *ngIf="cityDropdownOpen" (click)="$event.stopPropagation()">
+              <input type="text" class="dropdown-search" [(ngModel)]="citySearch"
+                     [ngModelOptions]="{standalone: true}"
+                     (input)="filterCities()" placeholder="🔍 Search city..." autofocus>
+              <div class="dropdown-list">
+                <div class="dropdown-item" *ngFor="let city of filteredCities"
+                     (click)="selectCity(city)">
+                  {{ city }}
+                </div>
+                <div class="dropdown-empty" *ngIf="filteredCities.length === 0">
+                  No cities found
+                </div>
+              </div>
+            </div>
+            <div class="error" *ngIf="checkoutForm.get('city')?.touched && !selectedCity">
+              City is required
+            </div>
+          </div>
+
+          <!-- PINCODE — auto-filled, editable -->
           <div class="form-group">
             <label>Pincode</label>
-            <input formControlName="pincode" type="text" placeholder="6-digit pincode" maxlength="6">
+            <input formControlName="pincode" type="text" placeholder="6-digit pincode" maxlength="6"
+                   (input)="onPincodeChange()">
             <div class="error" *ngIf="checkoutForm.get('pincode')?.touched && checkoutForm.get('pincode')?.invalid">
               Enter a valid 6-digit pincode
+            </div>
+            <div class="pincode-warning" *ngIf="pincodeInvalid">
+              ⚠️ {{ pincodeValidationMsg }}
             </div>
           </div>
 
           <div *ngIf="errorMessage" class="error-msg">{{ errorMessage }}</div>
 
-          <button type="submit" class="place-order-btn" [disabled]="submitting">
+          <button type="submit" class="place-order-btn" [disabled]="submitting || pincodeInvalid">
             {{ submitting ? 'Placing Order...' : 'Place Order' }}
           </button>
 

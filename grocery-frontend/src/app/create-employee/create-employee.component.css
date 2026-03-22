@@ -8,7 +8,7 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.create-users-container {
+.create-employee-container {
   background: white;
   padding: 2.5rem;
   border-radius: 12px;
@@ -54,12 +54,6 @@ label {
   font-size: 0.9rem;
 }
 
-.optional {
-  color: #aaa;
-  font-weight: 400;
-  font-size: 0.85rem;
-}
-
 input, select {
   width: 100%;
   padding: 0.75rem;
@@ -68,6 +62,7 @@ input, select {
   font-size: 1rem;
   transition: border-color 0.2s;
   box-sizing: border-box;
+  background-color: white;
 }
 
 input:focus, select:focus {
@@ -92,7 +87,7 @@ input:focus, select:focus {
 button {
   width: 100%;
   padding: 0.85rem;
-  background-color: #007bff;
+  background-color: #28a745;
   color: white;
   border: none;
   border-radius: 8px;
@@ -104,7 +99,7 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: #218838;
 }
 
 button:disabled {
@@ -112,19 +107,19 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.login-link {
+.back-link {
   text-align: center;
   margin-top: 1rem;
   color: #666;
   font-size: 0.9rem;
 }
 
-.login-link a {
+.back-link a {
   color: #007bff;
   text-decoration: none;
 }
 
-.login-link a:hover {
+.back-link a:hover {
   text-decoration: underline;
 }
 

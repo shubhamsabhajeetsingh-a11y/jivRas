@@ -1,14 +1,14 @@
-<div class="create-users-container">
-  <h2>Create Account</h2>
-  <p class="subtitle">Join JivRas Groceries today</p>
+<div class="create-employee-container">
+  <h2>Create Employee Account</h2>
+  <p class="subtitle">Internal user registration — employee access required</p>
 
-  <form [formGroup]="createUserForm" (ngSubmit)="onSubmit()">
+  <form [formGroup]="createEmployeeForm" (ngSubmit)="onSubmit()">
 
     <div class="form-row">
       <div class="form-group">
         <label for="firstName">First Name *</label>
         <input id="firstName" formControlName="firstName" type="text" placeholder="Enter first name">
-        <div class="field-error" *ngIf="createUserForm.get('firstName')?.touched && createUserForm.get('firstName')?.invalid">
+        <div class="field-error" *ngIf="createEmployeeForm.get('firstName')?.touched && createEmployeeForm.get('firstName')?.invalid">
           First name is required
         </div>
       </div>
@@ -16,7 +16,7 @@
       <div class="form-group">
         <label for="lastName">Last Name *</label>
         <input id="lastName" formControlName="lastName" type="text" placeholder="Enter last name">
-        <div class="field-error" *ngIf="createUserForm.get('lastName')?.touched && createUserForm.get('lastName')?.invalid">
+        <div class="field-error" *ngIf="createEmployeeForm.get('lastName')?.touched && createEmployeeForm.get('lastName')?.invalid">
           Last name is required
         </div>
       </div>
@@ -25,22 +25,25 @@
     <div class="form-group">
       <label for="mobile">Mobile Number *</label>
       <input id="mobile" formControlName="mobile" type="tel" placeholder="Enter 10-digit mobile number">
-      <div class="field-error" *ngIf="createUserForm.get('mobile')?.touched && createUserForm.get('mobile')?.invalid">
+      <div class="field-error" *ngIf="createEmployeeForm.get('mobile')?.touched && createEmployeeForm.get('mobile')?.invalid">
         Enter a valid 10-digit mobile number
       </div>
     </div>
 
     <div class="form-group">
       <label for="address">Address *</label>
-      <input id="address" formControlName="address" type="text" placeholder="Enter your address">
-      <div class="field-error" *ngIf="createUserForm.get('address')?.touched && createUserForm.get('address')?.invalid">
+      <input id="address" formControlName="address" type="text" placeholder="Enter address">
+      <div class="field-error" *ngIf="createEmployeeForm.get('address')?.touched && createEmployeeForm.get('address')?.invalid">
         Address is required
       </div>
     </div>
 
     <div class="form-group">
-      <label for="email">Email <span class="optional">(optional)</span></label>
+      <label for="email">Email *</label>
       <input id="email" formControlName="email" type="email" placeholder="Enter email address">
+      <div class="field-error" *ngIf="createEmployeeForm.get('email')?.touched && createEmployeeForm.get('email')?.invalid">
+        A valid email is required for employees
+      </div>
     </div>
 
     <hr class="divider">
@@ -48,7 +51,7 @@
     <div class="form-group">
       <label for="username">Username *</label>
       <input id="username" formControlName="username" type="text" placeholder="Choose a username">
-      <div class="field-error" *ngIf="createUserForm.get('username')?.touched && createUserForm.get('username')?.invalid">
+      <div class="field-error" *ngIf="createEmployeeForm.get('username')?.touched && createEmployeeForm.get('username')?.invalid">
         Username is required
       </div>
     </div>
@@ -56,16 +59,23 @@
     <div class="form-group">
       <label for="password">Password *</label>
       <input id="password" formControlName="password" type="password" placeholder="Choose a password (min 4 chars)">
-      <div class="field-error" *ngIf="createUserForm.get('password')?.touched && createUserForm.get('password')?.invalid">
+      <div class="field-error" *ngIf="createEmployeeForm.get('password')?.touched && createEmployeeForm.get('password')?.invalid">
         Password must be at least 4 characters
       </div>
     </div>
 
-    <button type="submit" [disabled]="createUserForm.invalid">Create Account</button>
+    <div class="form-group">
+      <label for="role">Role *</label>
+      <select id="role" formControlName="role">
+        <option value="EMPLOYEE">Employee</option>
+        <option value="ADMIN">Admin</option>
+      </select>
+    </div>
 
-    <p class="login-link">
-      Already have an account?
-      <a routerLink="/login">Login here</a>
+    <button type="submit" [disabled]="createEmployeeForm.invalid">Create Employee</button>
+
+    <p class="back-link">
+      <a routerLink="/products">← Back to Products</a>
     </p>
   </form>
 

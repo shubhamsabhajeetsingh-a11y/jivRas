@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './login/login.component';
 import { ProductComponent } from './product/product.component';
 import { CreateUsersComponent } from './create-users/create-users.component';
+import { CreateEmployeeComponent } from './create-employee/create-employee.component';
 import { AddProduct } from './add-product/add-product';
 import { CartComponent } from './cart/cart.component';
 import { CheckoutComponent } from './checkout/checkout.component';
@@ -14,7 +15,11 @@ export const routes: Routes = [
   // Products — open to everyone (guests can browse and add to cart)
   { path: 'products', component: ProductComponent },
 
+  // Customer self-registration (public)
   { path: 'create-users', component: CreateUsersComponent },
+
+  // Employee registration — EMPLOYEE/ADMIN only
+  { path: 'create-employee', component: CreateEmployeeComponent, canActivate: [authGuard] },
 
   // Add product — EMPLOYEE only (auth guard protects)
   { path: 'add-product', component: AddProduct, canActivate: [authGuard] },

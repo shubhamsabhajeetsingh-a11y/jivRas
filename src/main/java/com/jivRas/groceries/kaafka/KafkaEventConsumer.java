@@ -21,18 +21,28 @@ public class KafkaEventConsumer {
 	    @KafkaListener(topics = "logging", groupId = "auth-group")
 	    public void consume(String message) {
 	        try {
-
 	            Map<String, String> event = objectMapper.readValue(message, Map.class);
+	            String type = event.get("type");
 	            String username = event.get("username");
 
-	            LoginAudit audit = new LoginAudit(
-	                    username,
-	                    LocalDateTime.now()
-	            );
+	            if ("LOGIN".equals(type)) {
+	                String role = event.get("role");
+	                LoginAudit audit = new LoginAudit(
+	                        username,
+	                        role,
+	                        LocalDateTime.now()
+	                );
+	                loginAuditRepository.save(audit);
+	                System.out.println("Saved login audit for: " + username);
 
-	            loginAuditRepository.save(audit);
-
-	            System.out.println("Saved login audit for: " + username);
+	            } else if ("LOGOUT".equals(type)) {
+	                loginAuditRepository.findTopByUsernameOrderByLoginTimeDesc(username)
+	                    .ifPresent(audit -> {
+	                        audit.setLogoutTime(LocalDateTime.now());
+	                        loginAuditRepository.save(audit);
+	                        System.out.println("Updated logout time for: " + username);
+	                    });
+	            }
 
 	        } catch (Exception e) {
 	            e.printStackTrace();

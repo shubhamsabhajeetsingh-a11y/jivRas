@@ -16,11 +16,20 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Basic profile properties (used by both guests and registered)
     private String name;
     private String mobile;
-
     private String addressLine;
     private String city;
     private String state;
     private String pincode;
+    
+    // Login properties
+    private String username;
+    private String password;
+    private String role; // Usually "CUSTOMER"
+    
+    // Flag to distinguish registered customers from guest checkouts
+    @jakarta.persistence.Column(name = "is_account_created")
+    private boolean accountCreated;
 }
