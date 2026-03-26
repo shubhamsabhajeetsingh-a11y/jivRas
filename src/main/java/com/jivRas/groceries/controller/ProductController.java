@@ -28,38 +28,38 @@ public class ProductController {
     private final ProductService productService;
 
     /**
-     * Add new product — EMPLOYEE only.
+     * Add new product — all roles except CUSTOMER.
      */
     @PostMapping
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
     public ResponseEntity<Product> addProduct(@RequestBody Product product) {
         return ResponseEntity.ok(productService.save(product));
     }
 
     /**
-     * Update product (price / stock / name) — EMPLOYEE only.
+     * Update product (price / stock / name) — all roles except CUSTOMER.
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
         return ResponseEntity.ok(productService.update(id, product));
     }
 
     /**
-     * Upload product image — EMPLOYEE only.
+     * Upload product image — all roles except CUSTOMER.
      */
     @PostMapping("/{id}/image")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
     public ResponseEntity<String> uploadImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         productService.uploadImage(id, file);
         return ResponseEntity.ok("Image uploaded successfully");
     }
 
     /**
-     * Delete product — EMPLOYEE only.
+     * Delete product — all roles except CUSTOMER.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();

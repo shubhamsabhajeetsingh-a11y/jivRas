@@ -48,7 +48,11 @@ public class ProductService {
 //    }
 
     public void delete(Long id) {
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        // Soft-delete: mark as inactive (preserves order history)
+        product.setActive(false);
+        productRepository.save(product);
     }
 
     public List<Product> findAll() {

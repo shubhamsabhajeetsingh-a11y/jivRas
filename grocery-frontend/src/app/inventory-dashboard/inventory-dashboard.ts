@@ -74,22 +74,43 @@ export class InventoryDashboard implements OnInit {
     });
   }
 
+  // Custom modal state
+  showDeleteModal: boolean = false;
+  deleteTargetId: number | null = null;
+
   deleteProduct(id: number): void {
-    if(confirm('Are you sure you want to delete this product?')) {
-      this.productService.deleteProduct(id).subscribe({
-         next: () => {
-           this.successMessage = 'Product deleted successfully!';
-           this.cdr.detectChanges();
-           this.loadProducts();
-           setTimeout(() => { this.successMessage = ''; this.cdr.detectChanges(); }, 3000);
-         },
-         error: (err) => {
-           this.errorMessage = 'Failed to delete product.';
-           console.error(err);
-           this.cdr.detectChanges();
-           setTimeout(() => { this.errorMessage = ''; this.cdr.detectChanges(); }, 3000);
-         }
+    this.deleteTargetId = id;
+    this.showDeleteModal = true;
+    this.cdr.detectChanges();
+  }
+
+  confirmDelete(): void {
+    if (this.deleteTargetId !== null) {
+      this.productService.deleteProduct(this.deleteTargetId).subscribe({
+        next: () => {
+          this.successMessage = 'Product deleted successfully!';
+          this.showDeleteModal = false;
+          this.deleteTargetId = null;
+          this.cdr.detectChanges();
+          this.loadProducts();
+          setTimeout(() => { this.successMessage = ''; this.cdr.detectChanges(); }, 3000);
+        },
+        error: (err) => {
+          this.errorMessage = 'Failed to delete product.';
+          this.showDeleteModal = false;
+          this.deleteTargetId = null;
+          console.error(err);
+          this.cdr.detectChanges();
+          setTimeout(() => { this.errorMessage = ''; this.cdr.detectChanges(); }, 3000);
+        }
       });
     }
   }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
+    this.cdr.detectChanges();
+  }
 }
+
