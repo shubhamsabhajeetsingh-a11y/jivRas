@@ -88,7 +88,7 @@ export class AddProduct implements OnInit {
         
         // Redirect after 1.5 seconds
         setTimeout(() => {
-          this.router.navigate(['/products']);
+          this.router.navigate(['/inventory-dashboard']);
         }, 1500);
       },
       error: (err) => {

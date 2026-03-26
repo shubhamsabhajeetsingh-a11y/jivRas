@@ -8,6 +8,7 @@ import { CartComponent } from './cart/cart.component';
 import { CheckoutComponent } from './checkout/checkout.component';
 import { OrderConfirmationComponent } from './order-confirmation/order-confirmation.component';
 import { authGuard } from './auth.guard';
+import { InventoryDashboard } from './inventory-dashboard/inventory-dashboard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -20,6 +21,9 @@ export const routes: Routes = [
 
   // Employee registration — EMPLOYEE/ADMIN only
   { path: 'create-employee', component: CreateEmployeeComponent, canActivate: [authGuard] },
+
+  // Inventory Dashboard - EMPLOYEE only
+  { path: 'inventory-dashboard', component: InventoryDashboard, canActivate: [authGuard] },
 
   // Add product — EMPLOYEE only (auth guard protects)
   { path: 'add-product', component: AddProduct, canActivate: [authGuard] },

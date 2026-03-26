@@ -47,6 +47,10 @@ public class ProductService {
 //        productRepository.save(product);
 //    }
 
+    public void delete(Long id) {
+        productRepository.deleteById(id);
+    }
+
     public List<Product> findAll() {
         return productRepository.findAll();
     }

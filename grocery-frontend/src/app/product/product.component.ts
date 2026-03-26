@@ -3,17 +3,21 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ProductService } from '../core/services/product.service';
 import { CartService } from '../core/services/cart.service';
 import { Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { UserProfile } from '../user-profile/user-profile';
 
 @Component({
   selector: 'app-product',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule, UserProfile],
   templateUrl: './product.component.html',
   styleUrls: ['./product.component.css']
 })
 export class ProductComponent implements OnInit {
 
   products: any[] = [];
+  filteredProducts: any[] = [];
+  searchTerm: string = '';
   isEmployee = false;
   isLoggedIn = false;
   cartItemCount = 0;
@@ -52,12 +56,26 @@ export class ProductComponent implements OnInit {
     this.productService.getAllProducts().subscribe({
       next: (data) => {
         this.products = data;
+        this.filteredProducts = data;
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error loading products:', error);
       }
     });
+  }
+
+  filterProducts(): void {
+    if (!this.searchTerm) {
+      this.filteredProducts = this.products;
+    } else {
+      const term = this.searchTerm.toLowerCase();
+      this.filteredProducts = this.products.filter(p => 
+        p.name.toLowerCase().includes(term) || 
+        (p.description && p.description.toLowerCase().includes(term))
+      );
+    }
+    this.cdr.detectChanges();
   }
 
   addToCart(product: any): void {

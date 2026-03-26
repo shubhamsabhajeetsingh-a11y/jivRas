@@ -1,0 +1,23 @@
+<div class="profile-container" *ngIf="isLoggedIn && profile">
+  <button class="profile-circle" (click)="toggleDropdown()">
+    {{ initials }}
+  </button>
+
+  <div class="dropdown-menu" *ngIf="isDropdownOpen">
+    <div class="dropdown-header">
+      <span class="full-name">{{ profile.firstName }} {{ profile.lastName }}</span>
+      <span class="role-badge" *ngIf="profile.role === 'ROLE_EMPLOYEE' || profile.role === 'ROLE_ADMIN'">
+        {{ profile.role === 'ROLE_EMPLOYEE' ? 'Employee' : 'Admin' }}
+      </span>
+    </div>
+    <div class="dropdown-body">
+      <div class="info-item">
+        <i class="address-icon">📍</i>
+        <span class="address-text">{{ profile.address || 'No address provided' }}</span>
+      </div>
+    </div>
+    <div class="dropdown-footer">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,52 @@
+﻿[WARNING] 
+[WARNING] Some problems were encountered while building the effective settings
+[WARNING] Expected root element 'settings' but found 'proxies' (position: START_TAG seen <proxies>... @1:10)  @ C:\Users\shubh\.m2\settings.xml, line 1, column 10
+[WARNING] 
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< com.jivRas:groceries >------------------------
+[INFO] Building groceries 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ groceries ---
+[INFO] Deleting E:\JivRas\groceries(2)\groceries\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ groceries ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ groceries ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 57 source files with javac [debug parameters release 17] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /E:/JivRas/groceries(2)/groceries/src/main/java/com/jivRas/groceries/config/JwtService.java:[14,39] cannot find symbol
+  symbol:   class UserRepository
+  location: package com.jivRas.groceries.repository
+[ERROR] /E:/JivRas/groceries(2)/groceries/src/main/java/com/jivRas/groceries/config/JwtService.java:[27,16] cannot find symbol
+  symbol:   class UserRepository
+  location: class com.jivRas.groceries.config.JwtService
+[INFO] 2 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.603 s
+[INFO] Finished at: 2026-03-22T14:01:19+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project groceries: Compilation failure: Compilation failure: 
+[ERROR] /E:/JivRas/groceries(2)/groceries/src/main/java/com/jivRas/groceries/config/JwtService.java:[14,39] cannot find symbol
+[ERROR]   symbol:   class UserRepository
+[ERROR]   location: package com.jivRas.groceries.repository
+[ERROR] /E:/JivRas/groceries(2)/groceries/src/main/java/com/jivRas/groceries/config/JwtService.java:[27,16] cannot find symbol
+[ERROR]   symbol:   class UserRepository
+[ERROR]   location: class com.jivRas.groceries.config.JwtService
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

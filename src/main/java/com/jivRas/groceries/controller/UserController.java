@@ -14,10 +14,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.jivRas.groceries.dto.UserProfileDTO;
 
 import com.jivRas.groceries.config.JwtService;
 import com.jivRas.groceries.dto.CreateCustomerRequest;
@@ -147,11 +150,7 @@ public class UserController {
         return ResponseEntity.ok("Customer registered successfully");
     }
 
-    /**
-     * Authenticated endpoint — only employees can create internal users.
-     * Uses EmployeeUser table and tracks who created it.
-     */
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('ADMIN')")
+    // Made public so an existing admin is no longer required
     @PostMapping("/register-employee")
     public ResponseEntity<?> registerEmployee(@RequestBody CreateEmployeeRequest request, Principal principal) {
         if (usernameExists(request.getUsername())) {
@@ -171,9 +170,37 @@ public class UserController {
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
-        user.setCreatedBy(principal.getName());
+        
+        // If an admin isn't logged in, log "Self-Registered"
+        String creator = (principal != null) ? principal.getName() : "Self-Registered";
+        user.setCreatedBy(creator);
 
         employeeUserRepository.save(user);
-        return ResponseEntity.ok("Employee registered successfully by " + principal.getName());
+        return ResponseEntity.ok("Employee registered successfully by " + creator);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileDTO> getCurrentUser(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String username = principal.getName();
+        
+        Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(username);
+        if (employeeOpt.isPresent()) {
+            EmployeeUser emp = employeeOpt.get();
+            return ResponseEntity.ok(new UserProfileDTO(emp.getFirstName(), emp.getLastName(), emp.getAddress(), emp.getRole()));
+        }
+        
+        Optional<Customer> customerOpt = customerRepository.findByUsernameAndAccountCreatedTrue(username);
+        if (customerOpt.isPresent()) {
+            Customer cust = customerOpt.get();
+            String[] names = cust.getName() != null ? cust.getName().split(" ", 2) : new String[]{"", ""};
+            String firstName = names[0];
+            String lastName = names.length > 1 ? names[1] : "";
+            return ResponseEntity.ok(new UserProfileDTO(firstName, lastName, cust.getAddressLine(), cust.getRole()));
+        }
+        
+        return ResponseEntity.notFound().build();
     }
 }

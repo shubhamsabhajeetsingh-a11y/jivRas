@@ -17,9 +17,7 @@
         <span *ngIf="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
       </button>
 
-      <button *ngIf="isLoggedIn" (click)="logout()" class="logout-btn">
-        Logout
-      </button>
+      <app-user-profile *ngIf="isLoggedIn"></app-user-profile>
 
       <a *ngIf="!isLoggedIn" routerLink="/login" class="login-link-btn">
         Login
@@ -27,13 +25,17 @@
     </div>
   </div>
   
-  <div *ngIf="products.length === 0" class="empty-state">
-    <p>No products found. Please add some!</p>
+  <div class="search-container" style="margin: 0 2rem 2rem 2rem; text-align: center;">
+    <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filterProducts()" placeholder="Search products by name or description..." style="width: 100%; max-width: 600px; padding: 0.8rem 1rem; border-radius: 25px; border: 1px solid #ddd; font-size: 1rem; outline: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+  </div>
+
+  <div *ngIf="filteredProducts.length === 0" class="empty-state">
+    <p>No products found. Please try a different search or add some!</p>
   </div>
 
   <div class="product-grid">
     
-    <div *ngFor="let product of products" class="product-card">
+    <div *ngFor="let product of filteredProducts" class="product-card">
       
       <div class="image-container">
         <img [src]="product.imageUrl || 'https://placehold.co/200'" 

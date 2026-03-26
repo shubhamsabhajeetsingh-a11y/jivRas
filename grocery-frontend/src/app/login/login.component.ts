@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { environment } from '../environments/environment';
 
 @Component({
@@ -12,15 +12,29 @@ import { environment } from '../environments/environment';
   styleUrls: ['./login.component.css'],
   imports: [CommonModule, ReactiveFormsModule, RouterLink]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   errorMessage: string = '';
 
-  constructor(private fb: FormBuilder, private http: HttpClient, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private http: HttpClient,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
     this.loginForm = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required]
     });
+  }
+
+  ngOnInit(): void {
+    // If user navigated back to login page, clear their session
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
+    }
   }
 
   onSubmit(): void {
@@ -40,8 +54,8 @@ export class LoginComponent {
             // Remove guestId once logged in — cart will use username instead
             localStorage.removeItem('guestId');
 
-            if (response.role === 'EMPLOYEE' || response.role === 'ADMIN') {
-              this.router.navigate(['/add-product']);
+            if (response.role === 'ROLE_EMPLOYEE' || response.role === 'ROLE_ADMIN') {
+              this.router.navigate(['/inventory-dashboard']);
             } else {
               this.router.navigate(['/products']);
             }

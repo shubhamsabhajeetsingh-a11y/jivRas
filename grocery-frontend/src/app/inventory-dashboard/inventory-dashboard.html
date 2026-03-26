@@ -1,0 +1,59 @@
+<div class="dashboard-container">
+  <div class="header">
+    <h1>Inventory Dashboard</h1>
+    <div class="header-actions" style="display: flex; gap: 1rem; align-items: center;">
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filterProducts()" placeholder="Search inventory by name..." style="width: 300px; padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid #ddd; font-size: 0.95rem; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <button class="btn-primary" routerLink="/add-product">+ Add Items</button>
+      <app-user-profile></app-user-profile>
+    </div>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    {{ errorMessage }}
+  </div>
+
+
+  <div class="table-responsive">
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Product Name</th>
+          <th>Price per Kg (₹)</th>
+          <th>Available Stock (Kg)</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let product of filteredProducts">
+          <td>
+            <img [src]="product.imageUrl || 'assets/placeholder.png'" alt="{{ product.name }}" class="product-img">
+          </td>
+          <td class="product-name">{{ product.name }}</td>
+          <td>
+            <input type="number" class="form-control" [(ngModel)]="product.pricePerKg" min="1">
+          </td>
+          <td>
+             <input type="number" class="form-control" [(ngModel)]="product.availableStockKg" min="0">
+          </td>
+          <td>
+            <span class="badge" [ngClass]="product.active ? 'badge-active' : 'badge-inactive'">
+              {{ product.active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="action-buttons">
+            <button class="btn-save" (click)="updateProduct(product)">Save</button>
+            <button class="btn-delete" (click)="deleteProduct(product.id)">Delete</button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredProducts.length === 0">
+          <td colspan="6" class="text-center">No products found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
