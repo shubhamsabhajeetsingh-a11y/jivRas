@@ -9,8 +9,17 @@ import { environment } from '../../environments/environment';
 export class ProductService {
 
   private baseUrl = `${environment.apiUrl}/api/products`;
+  private categoriesUrl = `${environment.apiUrl}/api/categories`;
 
   constructor(private http: HttpClient) {}
+
+  getCategories(): Observable<any> {
+    return this.http.get(this.categoriesUrl);
+  }
+
+  addCategory(category: any): Observable<any> {
+    return this.http.post(this.categoriesUrl, category);
+  }
 
   getAllProducts(): Observable<any> {
     return this.http.get(this.baseUrl);

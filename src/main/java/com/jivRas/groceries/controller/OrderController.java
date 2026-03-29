@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.dto.CheckoutRequest;
 import com.jivRas.groceries.dto.OrderResponse;
+import com.jivRas.groceries.dto.AdminOrderResponse;
 import com.jivRas.groceries.service.OrderService;
+import java.util.List;
+import java.util.Map;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +51,18 @@ public class OrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrder(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
+    }
+
+    // ──────────────────────────── Admin Endpoints ────────────────────────────
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<AdminOrderResponse>> getAllOrdersForAdmin() {
+        return ResponseEntity.ok(orderService.getAllOrdersForAdmin());
+    }
+
+    @GetMapping("/admin/grouped-by-category")
+    public ResponseEntity<Map<String, List<AdminOrderResponse>>> getOrdersGroupedByCategory() {
+        return ResponseEntity.ok(orderService.getOrdersGroupedByCategory());
     }
 
     // ──────────────────────────── Helper ────────────────────────────

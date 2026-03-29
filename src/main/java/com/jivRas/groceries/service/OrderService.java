@@ -14,6 +14,8 @@ import com.jivRas.groceries.entity.CartItem;
 import com.jivRas.groceries.entity.Order;
 import com.jivRas.groceries.entity.OrderItem;
 import com.jivRas.groceries.entity.Product;
+import com.jivRas.groceries.dto.AdminOrderResponse;
+import java.util.Map;
 import com.jivRas.groceries.exception.ResourceNotFoundException;
 import com.jivRas.groceries.repository.CartRepository;
 import com.jivRas.groceries.repository.OrderRepository;
@@ -127,6 +129,61 @@ public class OrderService {
                         "Order not found with ID: " + orderId));
 
         return toOrderResponse(order);
+    }
+
+
+
+    // ──────────────────────────── Admin Methods ────────────────────────────
+
+    public List<AdminOrderResponse> getAllOrdersForAdmin() {
+        return orderRepository.findAllByOrderByOrderDateDesc().stream()
+                .map(order -> {
+                    List<OrderItemResponse> itemResponses = order.getItems().stream()
+                            .map(item -> OrderItemResponse.builder()
+                                    .id(item.getId())
+                                    .productId(item.getProduct() != null ? item.getProduct().getId() : null)
+                                    .productName(item.getProductName())
+                                    .quantityKg(item.getQuantityKg())
+                                    .pricePerKg(item.getPricePerKg())
+                                    .subtotal(item.getQuantityKg() * item.getPricePerKg())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return AdminOrderResponse.builder()
+                            .orderId(order.getId())
+                            .orderStatus(order.getOrderStatus())
+                            .orderDate(order.getOrderDate())
+                            .totalAmount(order.getTotalAmount())
+                            .estimatedDeliveryDays(order.getEstimatedDeliveryDays())
+                            .customerName(order.getCustomerName())
+                            .mobile(order.getMobile())
+                            .addressLine(order.getAddressLine())
+                            .city(order.getCity())
+                            .state(order.getState())
+                            .pincode(order.getPincode())
+                            .items(itemResponses)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, List<AdminOrderResponse>> getOrdersGroupedByCategory() {
+        return getAllOrdersForAdmin().stream()
+                .flatMap(adminOrder -> adminOrder.getItems().stream()
+                        .map(item -> {
+                            String categoryName = "Uncategorized";
+                            if (item.getProductId() != null) {
+                                Product product = productRepository.findById(item.getProductId()).orElse(null);
+                                if (product != null && product.getCategory() != null && product.getCategory().getName() != null) {
+                                    categoryName = product.getCategory().getName();
+                                }
+                            }
+                            return new java.util.AbstractMap.SimpleEntry<>(categoryName, adminOrder);
+                        })
+                        .distinct()
+                )
+                .collect(Collectors.groupingBy(Map.Entry::getKey, 
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
     }
 
     // ──────────────────────────── Mapper ────────────────────────────

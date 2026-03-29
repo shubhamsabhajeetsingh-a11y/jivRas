@@ -123,6 +123,46 @@ public class UserController {
         return ResponseEntity.ok("Logged out successfully");
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        String requestRefreshToken = request.get("refreshToken");
+        if (requestRefreshToken == null || requestRefreshToken.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Refresh token is required");
+        }
+
+        return refreshTokenRepository.findByToken(requestRefreshToken)
+                .map(token -> {
+                    if (token.getExpiryDate().before(new java.util.Date())) {
+                        refreshTokenRepository.delete(token);
+                        return ResponseEntity.status(401).body("Refresh token has expired");
+                    }
+                    
+                    String username = token.getUsername();
+                    String role = "";
+                    Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(username);
+                    if(employeeOpt.isPresent()) {
+                    	role = employeeOpt.get().getRole();
+                    } else {
+                    	Optional<Customer> customerOpt = customerRepository.findByUsernameAndAccountCreatedTrue(username);
+                    	if(customerOpt.isPresent()) {
+                    		role = customerOpt.get().getRole();
+                    	}
+                    }
+                    
+                    if(role.isEmpty()) {
+                    	return ResponseEntity.status(401).body("User not found");
+                    }
+
+                    String newAccessToken = jwtService.generateAccessToken(username, role);
+                    return ResponseEntity.ok(Map.of(
+                            "accessToken", newAccessToken,
+                            "refreshToken", requestRefreshToken,
+                            "role", role
+                    ));
+                })
+                .orElseGet(() -> ResponseEntity.status(401).body("Refresh token not found"));
+    }
+
     /**
      * Public endpoint — customer self-registration.
      * Uses Customer table and sets isAccountCreated = true.

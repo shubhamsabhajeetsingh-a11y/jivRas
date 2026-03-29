@@ -1,72 +1,249 @@
-<div class="dashboard-container">
-  <div class="header">
-    <h1>Inventory Dashboard</h1>
-    <div class="header-actions" style="display: flex; gap: 1rem; align-items: center;">
-      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filterProducts()" placeholder="Search inventory by name..." style="width: 300px; padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid #ddd; font-size: 0.95rem; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-      <button class="btn-primary" routerLink="/add-product">+ Add Items</button>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="brand">
+      Dashboard
+      <span>PANEL</span>
+    </div>
+
+    <div class="nav-menu" style="margin-top: 20px;">
+      <div class="nav-item" [class.active]="activeTab === 'inventory'" (click)="setTab('inventory')">
+        Inventory
+      </div>
+      <div class="nav-item" [class.active]="activeTab === 'orders'" (click)="setTab('orders')">
+        Orders
+      </div>
+      <div class="nav-item" [class.active]="activeTab === 'reports'" (click)="setTab('reports')">
+        Reports
+      </div>
+    </div>
+
+    <ng-container *ngIf="activeTab === 'inventory'">
+      <div class="cat-label" style="margin-top: 12px;">Categories</div>
+
+    <!-- All Items -->
+    <div class="cat-item" [class.active]="currentCat === 'all'" (click)="filterCat('all')">
+      <span class="cat-dot" style="background:#8FC49E"></span>
+      All Items
+      <span class="cat-count">{{ stats.catCounts['all'] || 0 }}</span>
+    </div>
+
+    <!-- Dynamic categories -->
+    <div *ngFor="let c of CATEGORIES"
+         class="cat-item"
+         [class.active]="currentCat === c.name"
+         (click)="filterCat(c.name)">
+      <span class="cat-dot" [style.background]="c.dot"></span>
+      {{ c.name }}
+      <span class="cat-count">{{ stats.catCounts[c.name] || 0 }}</span>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="cat-label" style="margin-top: 12px;">Quick Stats</div>
+    <div class="quick-stats">
+      <div class="stat-chip">
+        <div class="stat-val">{{ stats.active }}</div>
+        <div class="stat-lbl">Active items</div>
+      </div>
+      <div class="stat-chip stat-chip-warn">
+        <div class="stat-val warn">{{ stats.lowOrInactive }}</div>
+        <div class="stat-lbl">Low / Inactive</div>
+      </div>
+    </div>
+
+    </ng-container>
+
+    <div class="sidebar-footer">JivRas · v2.0</div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title">
+         <ng-container *ngIf="activeTab === 'inventory'">Inventory</ng-container>
+         <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
+         <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
+      </div>
+
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filterProducts()"
+               placeholder="Search inventory by name…" id="searchInput">
+      </div>
+
+      <div class="view-toggle">
+        <button class="vt-btn" [class.active]="currentView === 'card'" (click)="setView('card')" title="Card view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </button>
+        <button class="vt-btn" [class.active]="currentView === 'table'" (click)="setView('table')" title="Table view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <button *ngIf="activeTab === 'inventory'" class="add-btn" routerLink="/add-product">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add Item
+      </button>
+
       <app-user-profile></app-user-profile>
     </div>
-  </div>
 
-  <div *ngIf="successMessage" class="alert alert-success">
-    {{ successMessage }}
-  </div>
-  <div *ngIf="errorMessage" class="alert alert-danger">
-    {{ errorMessage }}
-  </div>
+    <!-- Alert messages -->
+    <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+    <div *ngIf="errorMessage"   class="alert alert-danger">{{ errorMessage }}</div>
 
+    <!-- Content area -->
+    <div class="content">
 
-  <div class="table-responsive">
-    <table class="inventory-table">
-      <thead>
-        <tr>
-          <th>Image</th>
-          <th>Product Name</th>
-          <th>Price per Kg (₹)</th>
-          <th>Available Stock (Kg)</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let product of filteredProducts">
-          <td>
-            <img [src]="product.imageUrl || 'assets/placeholder.png'" alt="{{ product.name }}" class="product-img">
-          </td>
-          <td class="product-name">{{ product.name }}</td>
-          <td>
-            <input type="number" class="form-control" [(ngModel)]="product.pricePerKg" min="1">
-          </td>
-          <td>
-             <input type="number" class="form-control" [(ngModel)]="product.availableStockKg" min="0">
-          </td>
-          <td>
-            <span class="badge" [ngClass]="product.active ? 'badge-active' : 'badge-inactive'">
-              {{ product.active ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-          <td class="action-buttons">
-            <button class="btn-save" (click)="updateProduct(product)">Save</button>
-            <button class="btn-delete" (click)="deleteProduct(product.id)">Delete</button>
-          </td>
-        </tr>
-        <tr *ngIf="filteredProducts.length === 0">
-          <td colspan="6" class="text-center">No products found.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+      <!-- ── Inventory Tab ── -->
+      <ng-container *ngIf="activeTab === 'inventory'">
+        <!-- Empty state -->
+        <div *ngIf="filteredProducts.length === 0" class="empty-state">
+          <div class="empty-icon">📦</div>
+          <div>No products found.</div>
+        </div>
 
-<!-- Custom Delete Confirmation Modal -->
+      <!-- ── Card View ── -->
+      <ng-container *ngIf="currentView === 'card' && filteredProducts.length > 0">
+        <ng-container *ngFor="let group of groupedProducts">
+          <div class="section-header">
+            <div class="section-dot" [style.background]="group.catColor"></div>
+            <div class="section-title">{{ group.cat }}</div>
+            <div class="section-badge">{{ group.items.length }} item{{ group.items.length !== 1 ? 's' : '' }}</div>
+            <div class="section-line"></div>
+          </div>
+
+          <div class="cards-grid">
+            <div *ngFor="let p of group.items" class="product-card">
+              <!-- Card image area -->
+              <div class="card-img" [style.background]="'linear-gradient(135deg, #f9f7f3 60%, ' + group.catColor + '22)'">
+                <!-- Real image if available -->
+                <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" class="card-product-img">
+                <span *ngIf="!p.imageUrl" class="card-emoji">{{ group.catEmoji }}</span>
+                <span class="card-status" [ngClass]="p.computedStatus.cls" (click)="toggleStatus(p)" style="cursor: pointer;" title="Toggle Product Status">{{ p.computedStatus.label }}</span>
+              </div>
+
+              <div class="card-body">
+                <div class="card-name">{{ p.name }}</div>
+                <div class="card-cat">{{ group.cat }}</div>
+
+                <div class="card-meta">
+                  <div class="meta-chip">
+                    <div class="meta-val">
+                      ₹<input type="number" [(ngModel)]="p.pricePerKg" min="1" class="inline-input" (ngModelChange)="onItemChange(p)">
+                    </div>
+                    <div class="meta-lbl">per kg</div>
+                  </div>
+                  <div class="meta-chip">
+                    <div class="meta-val" [class.stock-low]="(p.availableStockKg ?? p.stock ?? 0) < 20">
+                      <input type="number" [(ngModel)]="p.availableStockKg" min="0" class="inline-input" (ngModelChange)="onItemChange(p)">
+                    </div>
+                    <div class="meta-lbl">kg left</div>
+                  </div>
+                </div>
+
+                <div class="card-actions">
+                  <button class="btn-save" (click)="updateProduct(p)">Save</button>
+                  <button class="btn-del"  (click)="deleteProduct(p.id)">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+
+      <!-- ── Table View ── -->
+      <ng-container *ngIf="currentView === 'table' && filteredProducts.length > 0">
+        <ng-container *ngFor="let group of groupedProducts">
+          <div class="section-header">
+            <div class="section-dot" [style.background]="group.catColor"></div>
+            <div class="section-title">{{ group.cat }}</div>
+            <div class="section-badge">{{ group.items.length }} item{{ group.items.length !== 1 ? 's' : '' }}</div>
+            <div class="section-line"></div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price / KG</th>
+                  <th>Stock (KG)</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of group.items">
+                  <td>
+                    <div class="td-product">
+                      <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" class="td-img">
+                      <span *ngIf="!p.imageUrl" class="td-emoji">{{ group.catEmoji }}</span>
+                      <span class="td-name">{{ p.name }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="td-price">₹</span>
+                    <input type="number" [(ngModel)]="p.pricePerKg" min="1" class="tbl-input" (ngModelChange)="onItemChange(p)">
+                  </td>
+                  <td>
+                    <input type="number" [(ngModel)]="p.availableStockKg" min="0" class="tbl-input"
+                           [class.stock-low]="(p.availableStockKg ?? p.stock ?? 0) < 20" (ngModelChange)="onItemChange(p)">
+                  </td>
+                  <td>
+                    <span class="td-status" [ngClass]="p.computedStatus.cls" (click)="toggleStatus(p)" style="cursor: pointer;" title="Toggle Product Status">{{ p.computedStatus.label }}</span>
+                  </td>
+                  <td class="td-actions">
+                    <button class="tbl-save" (click)="updateProduct(p)">Save</button>
+                    <button class="tbl-del"  (click)="deleteProduct(p.id)">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+      </ng-container>
+      </ng-container>
+
+      <!-- ── Orders Tab ── -->
+      <app-orders *ngIf="activeTab === 'orders'"></app-orders>
+
+      <!-- ── Reports Tab Placeholder ── -->
+      <div *ngIf="activeTab === 'reports'" class="placeholder-card" style="background: var(--surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border); text-align: center; margin-top: 20px;">
+        <h2 style="font-family: 'Syne', sans-serif; color: var(--accent); margin-bottom: 12px;">Reports Module</h2>
+        <p style="color: var(--text-muted); line-height: 1.5;">Reports module coming soon. API not yet available.</p>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ── Delete Confirmation Modal ── -->
 <div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-icon">⚠️</div>
     <h3 class="modal-title">Delete Product</h3>
-    <p class="modal-message">Are you sure you want to delete this product?</p>
+    <p class="modal-message">Are you sure you want to delete this product? This action cannot be undone.</p>
     <div class="modal-actions">
-      <button class="modal-btn modal-btn-cancel" (click)="cancelDelete()">Deny</button>
-      <button class="modal-btn modal-btn-confirm" (click)="confirmDelete()">Accept</button>
+      <button class="modal-btn modal-btn-cancel" (click)="cancelDelete()">Cancel</button>
+      <button class="modal-btn modal-btn-confirm" (click)="confirmDelete()">Delete</button>
     </div>
   </div>
 </div>

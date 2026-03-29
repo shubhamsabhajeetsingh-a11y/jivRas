@@ -1,0 +1,98 @@
+<div class="orders-container">
+  
+  <!-- Loading & Error -->
+  <div *ngIf="isLoading" class="state-container">
+    <div class="spinner"></div>
+    <p>Loading orders...</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="state-container error-state">
+    <p>{{ errorMessage }}</p>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <div *ngIf="categoryKeys.length === 0" class="state-container">
+      <p>No orders found globally.</p>
+    </div>
+
+    <!-- Category Loop -->
+    <div *ngFor="let category of categoryKeys" class="category-section">
+      
+      <!-- Category Header -->
+      <div class="category-header" (click)="toggleCategory(category)">
+        <div class="cat-title">
+          <span class="toggle-icon">{{ expandedCategories.has(category) ? '▼' : '▶' }}</span>
+          <span class="cat-name">{{ category }}</span>
+        </div>
+        <div class="cat-badge">
+          {{ groupedOrders[category].length }} order(s)
+        </div>
+      </div>
+
+      <!-- Category Body -->
+      <div class="category-body" *ngIf="expandedCategories.has(category)">
+        
+        <div *ngIf="groupedOrders[category].length === 0" class="empty-cat">
+          No orders in this category.
+        </div>
+
+        <!-- Orders Loop -->
+        <div *ngFor="let order of groupedOrders[category]" class="order-card">
+          <div class="card-header">
+            <div class="order-id">#{{ order.orderId }}</div>
+            <div class="order-status" [ngClass]="getStatusClass(order.orderStatus)">
+              {{ order.orderStatus }}
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="customer-info">
+              <strong>{{ order.customerName }}</strong>
+              <span class="contact">📞 {{ order.mobile }}</span>
+            </div>
+            
+            <div class="address-info">
+              📍 {{ order.addressLine }}, {{ order.city }}, {{ order.state }} - {{ order.pincode }}
+            </div>
+
+            <div class="order-meta">
+              <span class="meta-item amount">💰 ₹{{ order.totalAmount }}</span>
+              <span class="meta-item">🚚 Est. {{ order.estimatedDeliveryDays }} days</span>
+              <span class="meta-item">📅 {{ order.orderDate | date:'dd MMM yyyy' }}</span>
+            </div>
+          </div>
+
+          <!-- Items Toggle Button -->
+          <div class="card-footer" (click)="toggleOrderItems(order.orderId)">
+            {{ expandedOrders.has(order.orderId) ? 'Hide Items ▲' : 'View Items ▼' }}
+          </div>
+
+          <!-- Items Table -->
+          <div class="items-container" *ngIf="expandedOrders.has(order.orderId)">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th class="text-right">Qty (kg)</th>
+                  <th class="text-right">Rate</th>
+                  <th class="text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of order.items">
+                  <td>{{ item.productName }}</td>
+                  <td class="text-right">{{ item.quantityKg }}</td>
+                  <td class="text-right">₹{{ item.pricePerKg }}</td>
+                  <td class="text-right">₹{{ item.subtotal }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

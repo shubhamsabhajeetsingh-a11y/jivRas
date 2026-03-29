@@ -15,13 +15,22 @@ import com.jivRas.groceries.repository.ProductRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import com.jivRas.groceries.entity.Category;
+import com.jivRas.groceries.repository.CategoryRepository;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     public Product save(Product product) {
+        if (product.getCategory() != null && product.getCategory().getId() != null) {
+            Category category = categoryRepository.findById(product.getCategory().getId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            product.setCategory(category);
+        }
         return productRepository.save(product);
     }
 
@@ -34,6 +43,12 @@ public class ProductService {
         product.setPricePerKg(updated.getPricePerKg());
         product.setAvailableStockKg(updated.getAvailableStockKg());
         product.setActive(updated.isActive());
+
+        if (updated.getCategory() != null && updated.getCategory().getId() != null) {
+            Category category = categoryRepository.findById(updated.getCategory().getId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            product.setCategory(category);
+        }
 
         return productRepository.save(product);
     }

@@ -1,41 +1,84 @@
-<div class="form-container">
-  <h2>Add New Inventory</h2>
-  
-  <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
-    
-    <div class="form-group">
-      <label>Product Name</label>
-      <input formControlName="name" type="text" placeholder="e.g. Basmati Rice">
+<div class="shell">
+  <a routerLink="/inventory-dashboard" class="back-link">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back to Inventory
+  </a>
+
+  <div class="form-card">
+    <div class="header">
+      <h2>Add New Item</h2>
+      <p>Fill in the details to add a new product to your inventory.</p>
     </div>
 
-    <div class="form-group">
-      <label>Description</label>
-      <input formControlName="description" type="text" placeholder="Product details...">
-    </div>
+    <!-- Alert messages -->
+    <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+    <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
 
-    <div class="row" style="display: flex; gap: 15px;">
-      <div class="form-group half" style="flex: 1;">
-        <label>Price (₹ per Kg)</label>
-        <input formControlName="pricePerKg" type="number">
+    <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+      
+      <div class="form-group">
+        <label>Product Name</label>
+        <input formControlName="name" class="input-style" type="text" placeholder="e.g. Basmati Rice">
       </div>
-      <div class="form-group half" style="flex: 1;">
-        <label>Stock (Kg)</label>
-        <input formControlName="availableStockKg" type="number">
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea formControlName="description" class="input-style" rows="3" placeholder="Describe the product quality, origin, etc."></textarea>
       </div>
-    </div>
 
-    <div class="form-group" style="margin-top: 15px;">
-      <label>Product Image</label>
-      <input type="file" (change)="onFileSelected($event)" accept="image/*">
-    </div>
+      <div class="form-group" *ngIf="!isAddingNewCategory">
+        <label>Category</label>
+        <select formControlName="categoryId" class="input-style" (change)="onCategoryChange($event)" style="appearance: auto;">
+          <option value="" disabled selected>Select a category</option>
+          <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+          <option value="NEW" style="font-weight:bold; color:#d57937;">+ Add New Category</option>
+        </select>
+      </div>
 
-    <p *ngIf="errorMessage" style="color: red; text-align: center;">{{ errorMessage }}</p>
-    <p *ngIf="successMessage" style="color: green; text-align: center;">{{ successMessage }}</p>
+      <div class="form-group" *ngIf="isAddingNewCategory">
+        <label>New Category Name</label>
+        <div style="display: flex; gap: 8px;">
+          <input [(ngModel)]="newCategoryName" [ngModelOptions]="{standalone: true}" class="input-style" type="text" placeholder="e.g. Dairy Products">
+          <button type="button" class="btn-submit" style="padding: 0 16px; width: auto;" (click)="saveNewCategory()">Save</button>
+          <button type="button" style="padding: 0 16px; width: auto; background:#e0e0e0; color:#333; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" (click)="cancelNewCategory()">Cancel</button>
+        </div>
+      </div>
 
-    <button type="submit" 
-            [disabled]="productForm.invalid || !selectedFile"
-            style="width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px;">
-      Add Product & Image
-    </button>
-  </form>
-</div>
+      <div class="row">
+        <div class="form-group half">
+          <label>Price (₹ / Kg)</label>
+          <input formControlName="pricePerKg" class="input-style" type="number" placeholder="0.00">
+        </div>
+        <div class="form-group half">
+          <label>Initial Stock (Kg)</label>
+          <input formControlName="availableStockKg" class="input-style" type="number" placeholder="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Product Image</label>
+        <div class="file-upload-area">
+          <input type="file" (change)="onFileSelected($event)" accept="image/*">
+          <div class="upload-icon">📸</div>
+          <div class="upload-text">
+            <strong>Click to upload</strong> or drag and drop<br>
+            PNG, JPG or WEBP (Max 5MB)
+          </div>
+        </div>
+
+        <!-- Image Preview -->
+        <div class="preview-container" *ngIf="imagePreview">
+          <img [src]="imagePreview" class="preview-img" alt="Product preview">
+        </div>
+      </div>
+
+      <button type="submit" 
+              class="btn-submit"
+              [disabled]="productForm.invalid || !selectedFile">
+        Create Product
+      </button>
+    </form>
+  </div>
+</div>

@@ -53,7 +53,7 @@ export class ProductComponent implements OnInit {
   }
 
   loadProducts(): void {
-    this.productService.getAllProducts().subscribe({
+    this.productService.getActiveProducts().subscribe({
       next: (data) => {
         this.products = data;
         this.filteredProducts = data;

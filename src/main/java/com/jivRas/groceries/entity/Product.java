@@ -26,4 +26,8 @@ public class Product {
     private String imageUrl;            // stored image path
 
     private boolean active = true;
+
+    @jakarta.persistence.ManyToOne
+    @jakarta.persistence.JoinColumn(name = "category_id")
+    private Category category;
 }
