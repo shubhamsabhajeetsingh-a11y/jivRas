@@ -44,6 +44,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 			if (jwtService.validateToken(token, userDetails)) {
 
+				// Extract role from JWT claim directly
+				String roleFromToken = jwtService.extractClaim(
+						token,
+						claims -> claims.get("role", String.class)
+				);
+
+				// Cross-check: JWT role must match DB role
+				String dbRole = userDetails.getAuthorities()
+						.stream()
+						.map(a -> a.getAuthority())
+						.findFirst()
+						.orElse(null);
+
+				if (roleFromToken != null
+						&& !roleFromToken.equals(dbRole)
+						&& !("ROLE_" + roleFromToken).equals(dbRole)) {
+					// Role mismatch between JWT and DB
+					// Reject the request
+					response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+					response.getWriter().write(
+							"{\"error\":\"Token role mismatch\"}"
+					);
+					return; // stop filter chain
+				}
+
 				UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
 						null, userDetails.getAuthorities());
 

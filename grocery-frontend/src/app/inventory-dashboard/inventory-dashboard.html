@@ -223,7 +223,7 @@
       </ng-container>
 
       <!-- ── Orders Tab ── -->
-      <app-orders *ngIf="activeTab === 'orders'"></app-orders>
+      <app-orders [hidden]="activeTab !== 'orders'"></app-orders>
 
       <!-- ── Reports Tab Placeholder ── -->
       <div *ngIf="activeTab === 'reports'" class="placeholder-card" style="background: var(--surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border); text-align: center; margin-top: 20px;">

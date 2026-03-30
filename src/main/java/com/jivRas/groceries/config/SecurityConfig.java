@@ -43,24 +43,37 @@ public class SecurityConfig {
                 // Preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Public endpoints — no auth required
+                // Auth endpoints — public
                 .requestMatchers("/api/users/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
 
-                // Products: anyone can VIEW products
-                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-
-                // Cart & Orders: open to all (guests + logged-in users)
-                .requestMatchers("/api/cart/**").permitAll()
-                .requestMatchers("/api/orders/**").permitAll()
-
-                // Location data: public
+                // Static resources
+                .requestMatchers("/images/**").permitAll()
                 .requestMatchers("/api/locations/**").permitAll()
 
-                // Images served from /images/**
-                .requestMatchers("/images/**").permitAll()
+                // Products: GET is public, 
+                // POST/PUT/DELETE = ADMIN only
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
 
-                // Everything else requires authentication
+                // Cart: guests allowed (X-Guest-Id used)
+                .requestMatchers("/api/cart/**").permitAll()
+
+                // Orders — SPLIT by path:
+                // Admin endpoints: ADMIN or EMPLOYEE only
+                .requestMatchers("/api/orders/admin/**").hasAnyRole("ADMIN", "EMPLOYEE")
+  
+                // Checkout + get own order: 
+                // authenticated users only
+                .requestMatchers("/api/orders/checkout", "/api/orders/{id}").authenticated()
+
+                // Categories: public read
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers("/api/categories/**").hasRole("ADMIN")
+
+                // Everything else: authenticated
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))

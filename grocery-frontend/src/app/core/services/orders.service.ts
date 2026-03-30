@@ -39,4 +39,8 @@ export class OrdersService {
   getOrdersGroupedByCategory(): Observable<{ [category: string]: AdminOrderResponse[] }> {
     return this.http.get<{ [category: string]: AdminOrderResponse[] }>(`${this.apiUrl}/grouped-by-category`);
   }
+
+  updateOrderStatus(id: number, status: string): Observable<any> {
+    return this.http.patch(`${environment.apiUrl}/api/orders/${id}/status`, { status });
+  }
 }

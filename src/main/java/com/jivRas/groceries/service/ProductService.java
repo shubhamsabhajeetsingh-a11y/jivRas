@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import com.jivRas.groceries.entity.Category;
 import com.jivRas.groceries.repository.CategoryRepository;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -25,6 +27,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public Product save(Product product) {
         if (product.getCategory() != null && product.getCategory().getId() != null) {
             Category category = categoryRepository.findById(product.getCategory().getId())
@@ -62,6 +65,7 @@ public class ProductService {
 //        productRepository.save(product);
 //    }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));

@@ -1,5 +1,27 @@
 <div class="orders-container">
   
+  <h2>Orders Dashboard</h2>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar" *ngIf="!isLoading && !errorMessage">
+    <div class="stat-box">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">{{ totalOrders }} orders</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Pending</div>
+      <div class="stat-value">{{ pendingOrders }} orders</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Delivered</div>
+      <div class="stat-value">{{ deliveredOrders }} orders</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Cancelled</div>
+      <div class="stat-value">{{ cancelledOrders }} orders</div>
+    </div>
+  </div>
+
   <!-- Loading & Error -->
   <div *ngIf="isLoading" class="state-container">
     <div class="spinner"></div>
@@ -13,7 +35,7 @@
   <!-- Content -->
   <div *ngIf="!isLoading && !errorMessage">
     <div *ngIf="categoryKeys.length === 0" class="state-container">
-      <p>No orders found globally.</p>
+      <p>No orders placed yet.</p>
     </div>
 
     <!-- Category Loop -->
@@ -22,60 +44,74 @@
       <!-- Category Header -->
       <div class="category-header" (click)="toggleCategory(category)">
         <div class="cat-title">
-          <span class="toggle-icon">{{ expandedCategories.has(category) ? '▼' : '▶' }}</span>
-          <span class="cat-name">{{ category }}</span>
+          <span class="toggle-icon" [class.rotated]="expandedCategories.has(category)">▶</span>
+          <span class="cat-name">
+            <span *ngIf="category === 'Uncategorized'" class="warning-icon" title="These products have no category assigned">⚠️</span>
+            {{ category }}
+          </span>
         </div>
         <div class="cat-badge">
-          {{ groupedOrders[category].length }} order(s)
+          {{ groupedOrders[category].length }} order{{ groupedOrders[category].length === 1 ? '' : 's' }}
         </div>
       </div>
 
       <!-- Category Body -->
       <div class="category-body" *ngIf="expandedCategories.has(category)">
         
-        <div *ngIf="groupedOrders[category].length === 0" class="empty-cat">
-          No orders in this category.
-        </div>
-
         <!-- Orders Loop -->
-        <div *ngFor="let order of groupedOrders[category]" class="order-card">
+        <div *ngFor="let order of groupedOrders[category]" class="order-card" [style.border-left-color]="getBorderColor(order.orderStatus)">
+          
           <div class="card-header">
-            <div class="order-id">#{{ order.orderId }}</div>
-            <div class="order-status" [ngClass]="getStatusClass(order.orderStatus)">
-              {{ order.orderStatus }}
+            <div class="header-left">
+              <span class="order-id">#{{ order.orderId }}</span>
+              <span class="order-date">{{ order.orderDate | date:'dd MMM yyyy' }}</span>
+            </div>
+            <div class="header-right">
+              <select class="status-dropdown" (change)="updateOrderStatus(order, $event)" (click)="$event.stopPropagation()">
+                <option [value]="order.orderStatus" *ngIf="!availableStatuses.includes(order.orderStatus)" selected>{{ order.orderStatus }}</option>
+                <option *ngFor="let st of availableStatuses" [value]="st" [selected]="st === order.orderStatus">{{ st }}</option>
+              </select>
+              <div class="order-status" [ngClass]="getStatusClass(order.orderStatus)">
+                {{ order.orderStatus }}
+              </div>
             </div>
           </div>
 
           <div class="card-body">
-            <div class="customer-info">
-              <strong>{{ order.customerName }}</strong>
-              <span class="contact">📞 {{ order.mobile }}</span>
-            </div>
-            
-            <div class="address-info">
-              📍 {{ order.addressLine }}, {{ order.city }}, {{ order.state }} - {{ order.pincode }}
+            <div class="customer-section">
+              <div class="customer-row">
+                <span class="customer-name">{{ order.customerName }}</span>
+                <span class="contact">📞 {{ order.mobile }}</span>
+              </div>
+              <div class="address-info">📍 {{ order.addressLine }}, {{ order.city }}, {{ order.state }} - {{ order.pincode }}</div>
             </div>
 
-            <div class="order-meta">
-              <span class="meta-item amount">💰 ₹{{ order.totalAmount }}</span>
-              <span class="meta-item">🚚 Est. {{ order.estimatedDeliveryDays }} days</span>
-              <span class="meta-item">📅 {{ order.orderDate | date:'dd MMM yyyy' }}</span>
+            <div class="info-chips">
+              <span class="chip chip-highlight">💰 ₹{{ order.totalAmount }}</span>
+              <span class="chip">🚚 Est. {{ order.estimatedDeliveryDays }} days</span>
+              <span class="chip">📅 {{ order.orderDate | date:'dd MMM yyyy' }}</span>
+            </div>
+
+            <div class="inline-error" *ngIf="statusError[order.orderId]">
+              {{ statusError[order.orderId] }}
             </div>
           </div>
 
-          <!-- Items Toggle Button -->
-          <div class="card-footer" (click)="toggleOrderItems(order.orderId)">
-            {{ expandedOrders.has(order.orderId) ? 'Hide Items ▲' : 'View Items ▼' }}
+          <!-- Items Action -->
+          <div class="card-view-items">
+            <button class="toggle-items-btn" (click)="toggleOrderItems(order.orderId)">
+              View Items <span class="chevron" [class.chevron-up]="expandedOrders.has(order.orderId)">▼</span>
+            </button>
           </div>
 
           <!-- Items Table -->
-          <div class="items-container" *ngIf="expandedOrders.has(order.orderId)">
+          <div class="items-dropdown" [class.show]="expandedOrders.has(order.orderId)">
             <table class="items-table">
               <thead>
                 <tr>
                   <th>Product</th>
                   <th class="text-right">Qty (kg)</th>
-                  <th class="text-right">Rate</th>
+                  <th class="text-right">Rate/kg</th>
                   <th class="text-right">Subtotal</th>
                 </tr>
               </thead>
@@ -86,9 +122,14 @@
                   <td class="text-right">₹{{ item.pricePerKg }}</td>
                   <td class="text-right">₹{{ item.subtotal }}</td>
                 </tr>
+                <tr class="table-total">
+                  <td colspan="3" class="text-right">Total:</td>
+                  <td class="text-right">₹{{ order.totalAmount }}</td>
+                </tr>
               </tbody>
             </table>
           </div>
+
         </div>
 
       </div>

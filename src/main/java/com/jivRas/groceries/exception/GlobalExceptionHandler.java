@@ -69,4 +69,22 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(response);
     }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        return ResponseEntity.status(403).body(
+                Map.of(
+                        "error", "Access Denied",
+                        "message", "You are not authorized to perform this action"
+                ));
+    }
+
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<?> handleUnauthorized(org.springframework.security.core.AuthenticationException ex) {
+        return ResponseEntity.status(401).body(
+                Map.of(
+                        "error", "Unauthorized",
+                        "message", "Invalid or expired token. Please login again."
+                ));
+    }
 }
