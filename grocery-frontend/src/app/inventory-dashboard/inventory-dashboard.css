@@ -826,3 +826,48 @@ tbody td {
 .modal-btn-confirm:hover {
   background: #f5c6c1;
 }
+
+/* ════════════════════════════════
+   BRANCH SELECTOR (ADMIN)
+════════════════════════════════ */
+.branch-selector {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+}
+
+.branch-select {
+  padding: 6px 28px 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  transition: border 0.2s;
+}
+
+.branch-select:focus {
+  border-color: var(--accent);
+}
+
+/* ── Branch Name Label (EMPLOYEE / BRANCH_MANAGER) ── */
+.branch-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.branch-label {
+  font-weight: 600;
+  color: var(--accent);
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+}

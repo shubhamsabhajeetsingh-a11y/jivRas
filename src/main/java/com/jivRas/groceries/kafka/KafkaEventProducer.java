@@ -1,4 +1,4 @@
-package com.jivRas.groceries.kaafka;
+package com.jivRas.groceries.kafka;
 
 import java.util.HashMap;
 import java.util.Map;

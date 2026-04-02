@@ -41,11 +41,29 @@ public class JwtService {
 	    return createToken(claims, username);
 	}
 	
+//	public String generateAccessToken(String username, String role) {
+//
+//	    Map<String, Object> claims = new HashMap<>();
+//	    claims.put("role", role);
+//
+//	    return Jwts.builder()
+//	            .setClaims(claims)
+//	            .setSubject(username)
+//	            .setIssuedAt(new Date())
+//	            .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15)) // 15 min
+//	            .signWith(getSignKey(), SignatureAlgorithm.HS256)
+//	            .compact();
+//	}
+	
+	
+	
 	public String generateAccessToken(String username, String role) {
-
+		 
 	    Map<String, Object> claims = new HashMap<>();
 	    claims.put("role", role);
-
+	    // branchId is NOT included here — frontend will call /api/users/profile to get it
+	    // This keeps the JWT clean and simple
+	 
 	    return Jwts.builder()
 	            .setClaims(claims)
 	            .setSubject(username)

@@ -48,7 +48,7 @@
       </div>
       <div class="stat-chip stat-chip-warn">
         <div class="stat-val warn">{{ stats.lowOrInactive }}</div>
-        <div class="stat-lbl">Low / Inactive</div>
+        <div class="stat-lbl">Low Stock</div>
       </div>
     </div>
 
@@ -67,6 +67,29 @@
          <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
          <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
       </div>
+
+      <!-- Branch label (non-admins) or branch switcher (ADMIN) -->
+      <ng-container *ngIf="activeTab === 'inventory'">
+        <!-- ADMIN: Branch dropdown to switch context -->
+        <div class="branch-selector" *ngIf="currentUser?.role === 'ADMIN'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <select [(ngModel)]="selectedBranchId" (change)="onBranchChange()" class="branch-select" id="branchSelect">
+            <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
+          </select>
+        </div>
+
+        <!-- EMPLOYEE/BRANCH_MANAGER: Static branch name label -->
+        <div class="branch-label-wrap" *ngIf="currentUser?.role !== 'ADMIN'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span class="branch-label">{{ currentBranchName }}</span>
+        </div>
+      </ng-container>
 
       <div class="search-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -94,7 +117,9 @@
         </button>
       </div>
 
-      <button *ngIf="activeTab === 'inventory'" class="add-btn" routerLink="/add-product">
+      <!-- Add Item — ADMIN only -->
+      <button *ngIf="activeTab === 'inventory' && currentUser?.role === 'ADMIN'"
+              class="add-btn" routerLink="/add-product">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
@@ -134,14 +159,13 @@
             <div *ngFor="let p of group.items" class="product-card">
               <!-- Card image area -->
               <div class="card-img" [style.background]="'linear-gradient(135deg, #f9f7f3 60%, ' + group.catColor + '22)'">
-                <!-- Real image if available -->
-                <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" class="card-product-img">
+                <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.productName" class="card-product-img">
                 <span *ngIf="!p.imageUrl" class="card-emoji">{{ group.catEmoji }}</span>
-                <span class="card-status" [ngClass]="p.computedStatus.cls" (click)="toggleStatus(p)" style="cursor: pointer;" title="Toggle Product Status">{{ p.computedStatus.label }}</span>
+                <span class="card-status" [ngClass]="p.computedStatus?.cls">{{ p.computedStatus?.label }}</span>
               </div>
 
               <div class="card-body">
-                <div class="card-name">{{ p.name }}</div>
+                <div class="card-name">{{ p.productName }}</div>
                 <div class="card-cat">{{ group.cat }}</div>
 
                 <div class="card-meta">
@@ -152,16 +176,23 @@
                     <div class="meta-lbl">per kg</div>
                   </div>
                   <div class="meta-chip">
-                    <div class="meta-val" [class.stock-low]="(p.availableStockKg ?? p.stock ?? 0) < 20">
+                    <div class="meta-val" [class.stock-low]="p.lowStock">
                       <input type="number" [(ngModel)]="p.availableStockKg" min="0" class="inline-input" (ngModelChange)="onItemChange(p)">
                     </div>
                     <div class="meta-lbl">kg left</div>
                   </div>
+                  <div class="meta-chip">
+                    <div class="meta-val">
+                      <input type="number" [(ngModel)]="p.lowStockThreshold" min="0" class="inline-input" title="Low stock alert threshold" (ngModelChange)="onItemChange(p)">
+                    </div>
+                    <div class="meta-lbl">threshold</div>
+                  </div>
                 </div>
 
                 <div class="card-actions">
-                  <button class="btn-save" (click)="updateProduct(p)">Save</button>
-                  <button class="btn-del"  (click)="deleteProduct(p.id)">Delete</button>
+                  <button class="btn-save" (click)="updateStock(p)">Save</button>
+                  <!-- Delete restricted to ADMIN only -->
+                  <button *ngIf="currentUser?.role === 'ADMIN'" class="btn-del" (click)="deleteProduct(p.id)">Delete</button>
                 </div>
               </div>
             </div>
@@ -186,6 +217,7 @@
                   <th>Product</th>
                   <th>Price / KG</th>
                   <th>Stock (KG)</th>
+                  <th>Threshold</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -194,9 +226,9 @@
                 <tr *ngFor="let p of group.items">
                   <td>
                     <div class="td-product">
-                      <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" class="td-img">
+                      <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.productName" class="td-img">
                       <span *ngIf="!p.imageUrl" class="td-emoji">{{ group.catEmoji }}</span>
-                      <span class="td-name">{{ p.name }}</span>
+                      <span class="td-name">{{ p.productName }}</span>
                     </div>
                   </td>
                   <td>
@@ -205,14 +237,19 @@
                   </td>
                   <td>
                     <input type="number" [(ngModel)]="p.availableStockKg" min="0" class="tbl-input"
-                           [class.stock-low]="(p.availableStockKg ?? p.stock ?? 0) < 20" (ngModelChange)="onItemChange(p)">
+                           [class.stock-low]="p.lowStock" (ngModelChange)="onItemChange(p)">
                   </td>
                   <td>
-                    <span class="td-status" [ngClass]="p.computedStatus.cls" (click)="toggleStatus(p)" style="cursor: pointer;" title="Toggle Product Status">{{ p.computedStatus.label }}</span>
+                    <input type="number" [(ngModel)]="p.lowStockThreshold" min="0" class="tbl-input"
+                           title="Low stock alert threshold" (ngModelChange)="onItemChange(p)">
+                  </td>
+                  <td>
+                    <span class="td-status" [ngClass]="p.computedStatus?.cls">{{ p.computedStatus?.label }}</span>
                   </td>
                   <td class="td-actions">
-                    <button class="tbl-save" (click)="updateProduct(p)">Save</button>
-                    <button class="tbl-del"  (click)="deleteProduct(p.id)">Delete</button>
+                    <button class="tbl-save" (click)="updateStock(p)">Save</button>
+                    <!-- Delete restricted to ADMIN only -->
+                    <button *ngIf="currentUser?.role === 'ADMIN'" class="tbl-del" (click)="deleteProduct(p.id)">Delete</button>
                   </td>
                 </tr>
               </tbody>
@@ -239,11 +276,11 @@
 <div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-icon">⚠️</div>
-    <h3 class="modal-title">Delete Product</h3>
-    <p class="modal-message">Are you sure you want to delete this product? This action cannot be undone.</p>
+    <h3 class="modal-title">Remove from Inventory</h3>
+    <p class="modal-message">Are you sure you want to remove this product from this branch's inventory? This action cannot be undone.</p>
     <div class="modal-actions">
       <button class="modal-btn modal-btn-cancel" (click)="cancelDelete()">Cancel</button>
-      <button class="modal-btn modal-btn-confirm" (click)="confirmDelete()">Delete</button>
+      <button class="modal-btn modal-btn-confirm" (click)="confirmDelete()">Remove</button>
     </div>
   </div>
 </div>

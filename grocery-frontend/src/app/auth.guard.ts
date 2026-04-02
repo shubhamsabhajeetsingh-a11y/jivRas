@@ -19,7 +19,7 @@ export const authGuard: CanActivateFn = () => {
     // If trying to access add-product or create-employee, enforce employee role
     const currentUrl = router.url; // Or we can rely on route data, but simpler here:
     if (window.location.pathname.includes('/add-product') || window.location.pathname.includes('/create-employee')) {
-        if (role === 'ROLE_EMPLOYEE' || role === 'ROLE_ADMIN') {
+        if (role === 'EMPLOYEE' || role === 'ADMIN' || role === 'BRANCH_MANAGER') {
             return true;
         } else {
             router.navigate(['/products']);

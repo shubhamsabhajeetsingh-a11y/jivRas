@@ -12,4 +12,5 @@ public class CreateCustomerRequest {
     private String email;     // optional for customers
     private String username;
     private String password;
+
 }

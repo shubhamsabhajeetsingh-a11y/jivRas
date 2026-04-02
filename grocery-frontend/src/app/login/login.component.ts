@@ -54,7 +54,7 @@ export class LoginComponent implements OnInit {
             // Remove guestId once logged in — cart will use username instead
             localStorage.removeItem('guestId');
 
-            if (response.role === 'ROLE_EMPLOYEE' || response.role === 'ROLE_ADMIN') {
+            if (response.role === 'EMPLOYEE' || response.role === 'ADMIN' || response.role === 'BRANCH_MANAGER') {
               this.router.navigate(['/inventory-dashboard']);
             } else {
               this.router.navigate(['/products']);

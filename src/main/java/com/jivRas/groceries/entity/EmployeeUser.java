@@ -10,8 +10,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Data
 @Table(name = "employee_users")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class EmployeeUser {
@@ -22,7 +22,14 @@ public class EmployeeUser {
 
     private String username;
     private String password;
-    private String role; // EMPLOYEE or ADMIN
+
+    /**
+     * Role values:
+     *   "EMPLOYEE"        — Can view and update only their own branch inventory/orders
+     *   "BRANCH_MANAGER"  — NEW: Manages a specific branch, can create employees for that branch
+     *   "ADMIN"           — Super Admin, can see and manage all branches
+     */
+    private String role;
 
     private String firstName;
     private String lastName;
@@ -30,6 +37,19 @@ public class EmployeeUser {
     private String address;
     private String email;
 
-    // Username of the employee who created this account
+    // Username of the employee/admin who created this account
     private String createdBy;
+
+    /**
+     * NEW FIELD — branchId
+     *
+     * Rules:
+     *   EMPLOYEE       → must have a branchId (assigned at creation)
+     *   BRANCH_MANAGER → must have a branchId (assigned at creation)
+     *   ADMIN          → branchId is NULL (they see all branches)
+     *
+     * This is the KEY field that locks an employee to their branch.
+     * Set once at account creation. Cannot be changed by employee themselves.
+     */
+    private Long branchId;
 }

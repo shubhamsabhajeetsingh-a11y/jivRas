@@ -20,15 +20,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.jivRas.groceries.dto.UserProfileDTO;
-
 import com.jivRas.groceries.config.JwtService;
 import com.jivRas.groceries.dto.CreateCustomerRequest;
 import com.jivRas.groceries.dto.CreateEmployeeRequest;
+import com.jivRas.groceries.dto.UserProfileDTO;
 import com.jivRas.groceries.entity.Customer;
 import com.jivRas.groceries.entity.EmployeeUser;
 import com.jivRas.groceries.entity.RefreshToken;
-import com.jivRas.groceries.kaafka.KafkaEventProducer;
+import com.jivRas.groceries.kafka.KafkaEventProducer;
 import com.jivRas.groceries.repository.CustomerRepository;
 import com.jivRas.groceries.repository.EmployeeUserRepository;
 import com.jivRas.groceries.repository.RefreshTokenRepository;
@@ -78,10 +77,14 @@ public class UserController {
 
                 UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-                String role = userDetails.getAuthorities()
+                String roleRaw = userDetails.getAuthorities()
                         .iterator()
                         .next()
                         .getAuthority();
+
+                // Strip ROLE_ prefix added by Spring's .roles() helper
+                // DB stores "ADMIN", JWT and frontend expect "ADMIN" (not "ROLE_ADMIN")
+                String role = roleRaw.startsWith("ROLE_") ? roleRaw.substring(5) : roleRaw;
 
                 // Trigger login audit via Kafka
                 kafkaEventProducer.sendLoginEvent(username, role);
@@ -193,14 +196,21 @@ public class UserController {
     // Made public so an existing admin is no longer required
     @PostMapping("/register-employee")
     public ResponseEntity<?> registerEmployee(@RequestBody CreateEmployeeRequest request, Principal principal) {
+     
         if (usernameExists(request.getUsername())) {
             return ResponseEntity.badRequest().body("Username already exists: " + request.getUsername());
         }
-
+     
         if (request.getEmail() == null || request.getEmail().isBlank()) {
             return ResponseEntity.badRequest().body("Email is mandatory for employee registration");
         }
-
+     
+        // Validate that EMPLOYEE and BRANCH_MANAGER must have a branchId
+        // ADMIN role doesn't need one (they see all branches)
+        if (!request.getRole().equals("ADMIN") && request.getBranchId() == null) {
+            return ResponseEntity.badRequest().body("branchId is required for EMPLOYEE and BRANCH_MANAGER roles");
+        }
+     
         EmployeeUser user = new EmployeeUser();
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -209,14 +219,18 @@ public class UserController {
         user.setEmail(request.getEmail());
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+     
+        // Set role — "EMPLOYEE", "BRANCH_MANAGER", or "ADMIN"
         user.setRole(request.getRole());
-        
-        // If an admin isn't logged in, log "Self-Registered"
-        String creator = (principal != null) ? principal.getName() : "Self-Registered";
-        user.setCreatedBy(creator);
-
+     
+        // NEW: Assign branchId — links this employee to their branch permanently
+        user.setBranchId(request.getBranchId());
+     
+        // Set who created this account (the logged-in admin/manager)
+        user.setCreatedBy(principal != null ? principal.getName() : "SYSTEM");
+     
         employeeUserRepository.save(user);
-        return ResponseEntity.ok("Employee registered successfully by " + creator);
+        return ResponseEntity.ok("Employee registered successfully");
     }
 
     @GetMapping("/me")
@@ -243,4 +257,35 @@ public class UserController {
         
         return ResponseEntity.notFound().build();
     }
+    
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(Principal principal) {
+
+        // Principal is null when no valid JWT is present
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Not authenticated");
+        }
+
+        String username = principal.getName();
+
+        // Try to find in EmployeeUser table
+        Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(username);
+        if (employeeOpt.isPresent()) {
+            EmployeeUser emp = employeeOpt.get();
+
+            // Return profile with branchId — Angular uses this for dashboard routing
+            // branchId is null for ADMIN (they see all branches via dropdown)
+            return ResponseEntity.ok(Map.of(
+                    "username", emp.getUsername(),
+                    "role", emp.getRole(),
+                    "firstName", emp.getFirstName() != null ? emp.getFirstName() : "",
+                    "lastName", emp.getLastName() != null ? emp.getLastName() : "",
+                    "email", emp.getEmail() != null ? emp.getEmail() : "",
+                    "branchId", emp.getBranchId() != null ? emp.getBranchId() : 0
+            ));
+        }
+
+        return ResponseEntity.status(404).body("Profile not found");
+    }
+
 }

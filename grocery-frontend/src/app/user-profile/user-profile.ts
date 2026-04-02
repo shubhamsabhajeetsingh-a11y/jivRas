@@ -1,7 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef, HostListener, ElementRef, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
-import { UserService, UserProfile as UserProfileModel } from '../core/services/user.service';
+import { UserService, UserProfileBasic as UserProfileModel } from '../core/services/user.service';
+
 
 @Component({
   selector: 'app-user-profile',
