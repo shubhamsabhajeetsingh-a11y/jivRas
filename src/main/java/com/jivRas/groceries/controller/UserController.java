@@ -2,11 +2,11 @@ package com.jivRas.groceries.controller;
 
 import java.security.Principal;
 import java.sql.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.jivRas.groceries.service.DynamicAuthorizationService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.jivRas.groceries.config.JwtService;
 import com.jivRas.groceries.dto.CreateCustomerRequest;
@@ -43,11 +47,13 @@ public class UserController {
     private final KafkaEventProducer kafkaEventProducer;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final DynamicAuthorizationService dynamicAuthorizationService;
 
     public UserController(CustomerRepository customerRepository, EmployeeUserRepository employeeUserRepository,
             PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
             KafkaEventProducer kafkaEventProducer, JwtService jwtService,
-            DaoAuthenticationProvider authenticationProvider, RefreshTokenRepository refreshTokenRepository) {
+            DaoAuthenticationProvider authenticationProvider, RefreshTokenRepository refreshTokenRepository,
+            DynamicAuthorizationService dynamicAuthorizationService) {
         this.customerRepository = customerRepository;
         this.employeeUserRepository = employeeUserRepository;
         this.passwordEncoder = passwordEncoder;
@@ -55,6 +61,7 @@ public class UserController {
         this.kafkaEventProducer = kafkaEventProducer;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.dynamicAuthorizationService = dynamicAuthorizationService;
     }
 
     private boolean usernameExists(String username) {
@@ -286,6 +293,36 @@ public class UserController {
         }
 
         return ResponseEntity.status(404).body("Profile not found");
+    }
+
+    /**
+     * GET /api/users/roles
+     * ADMIN-only: returns distinct assignable roles from the EmployeeUser table,
+     * excluding ADMIN (which cannot be assigned via the Create Role form).
+     */
+    @GetMapping("/roles")
+    public ResponseEntity<?> getAssignableRoles(
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
+        List<String> roles = employeeUserRepository.findDistinctRolesExcludingAdmin();
+        System.out.println("Roles fetched from DB: " + roles);
+        return ResponseEntity.ok(roles);
+    }
+
+    // ── Utility ─────────────────────────────────────────────────────────────
+
+    private String resolveRole(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) return "";
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .findFirst()
+                .orElse("");
     }
 
 }

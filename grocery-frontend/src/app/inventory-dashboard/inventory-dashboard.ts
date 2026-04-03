@@ -1,4 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../environments/environment';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -53,7 +55,27 @@ export class InventoryDashboard implements OnInit {
 
   currentView: 'card' | 'table' = 'card';
   currentCat: string = 'all';
-  activeTab: 'inventory' | 'orders' | 'reports' = 'inventory';
+  activeTab: 'inventory' | 'orders' | 'reports' | 'create-role' = 'inventory';
+
+  // ── Create Role form (ADMIN only) ─────────────────────────────────
+  createRoleBranches: { id: number; name: string; city: string }[] = [];
+  createRoleForm = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    mobile: '',
+    address: '',
+    username: '',
+    password: '',
+    role: 'EMPLOYEE',
+    branchId: null as number | null
+  };
+  createRoleSuccess = '';
+  createRoleError  = '';
+  createRoleSubmitting = false;
+  createRoleBranchesLoaded = false;
+  createRoleRoles: string[] = [];
+  createRoleRolesLoaded = false;
 
   readonly EMOJIS: Record<string, string> = {
     'Dry Fruits': '🌰',
@@ -86,6 +108,7 @@ export class InventoryDashboard implements OnInit {
     private branchService: BranchService,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -225,8 +248,128 @@ export class InventoryDashboard implements OnInit {
     this.cdr.detectChanges();
   }
 
-  setTab(tab: 'inventory' | 'orders' | 'reports'): void {
+  setTab(tab: 'inventory' | 'orders' | 'reports' | 'create-role'): void {
     this.activeTab = tab;
+    if (tab === 'create-role') {
+      if (!this.createRoleBranchesLoaded) { this.loadCreateRoleBranches(); }
+      if (!this.createRoleRolesLoaded)   { this.loadCreateRoleRoles();    }
+    }
+    this.cdr.detectChanges();
+  }
+
+  // ── Create Role helpers ────────────────────────────────────────────
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : '';
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
+
+  loadCreateRoleRoles(): void {
+    console.log('[CreateRole] Calling GET /api/users/roles …');
+    this.http
+      .get<string[]>(`${environment.apiUrl}/api/users/roles`, { headers: this.getAuthHeaders() })
+      .subscribe({
+        next: (roles) => {
+          console.log('[CreateRole] Roles received from API:', roles);
+          this.createRoleRoles = roles;
+          this.createRoleRolesLoaded = true;
+          if (roles.length > 0 && !this.createRoleForm.role) {
+            this.createRoleForm.role = roles[0];
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('[CreateRole] Roles API failed — status:', err?.status, '| message:', err?.message, '| full error:', err);
+          this.createRoleRoles = [];
+          this.createRoleRolesLoaded = true;
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  loadCreateRoleBranches(): void {
+    this.http
+      .get<any[]>(`${environment.apiUrl}/api/branches`, { headers: this.getAuthHeaders() })
+      .subscribe({
+        next: (branches) => {
+          this.createRoleBranches = branches;
+          this.createRoleBranchesLoaded = true;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Failed to load branches for create-role:', err);
+          // Fallback to /active if plain endpoint fails
+          this.http
+            .get<any[]>(`${environment.apiUrl}/api/branches/active`, { headers: this.getAuthHeaders() })
+            .subscribe({
+              next: (branches) => {
+                this.createRoleBranches = branches;
+                this.createRoleBranchesLoaded = true;
+                this.cdr.detectChanges();
+              },
+              error: () => this.cdr.detectChanges()
+            });
+        }
+      });
+  }
+
+  submitCreateRole(): void {
+    this.createRoleError  = '';
+    this.createRoleSuccess = '';
+
+    const f = this.createRoleForm;
+    if (!f.firstName.trim() || !f.lastName.trim() || !f.email.trim() ||
+        !f.mobile.trim() || !f.address.trim() || !f.username.trim() || !f.password.trim()) {
+      this.createRoleError = 'All fields are required.';
+      return;
+    }
+    if (!f.branchId) {
+      this.createRoleError = 'Please select a branch.';
+      return;
+    }
+
+    this.createRoleSubmitting = true;
+    const body = {
+      firstName: f.firstName.trim(),
+      lastName:  f.lastName.trim(),
+      email:     f.email.trim(),
+      mobile:    f.mobile.trim(),
+      address:   f.address.trim(),
+      username:  f.username.trim(),
+      password:  f.password,
+      role:      f.role,
+      branchId:  Number(f.branchId)
+    };
+
+    this.http
+      .post<any>(`${environment.apiUrl}/api/users/register-employee`, body, { headers: this.getAuthHeaders() })
+      .subscribe({
+        next: () => {
+          this.createRoleSuccess   = 'Employee created successfully!';
+          this.createRoleSubmitting = false;
+          this.createRoleForm = {
+            firstName: '', lastName: '', email: '', mobile: '',
+            address: '', username: '', password: '', role: 'EMPLOYEE', branchId: null
+          };
+          this.cdr.detectChanges();
+          setTimeout(() => { this.createRoleSuccess = ''; this.cdr.detectChanges(); }, 4000);
+        },
+        error: (err) => {
+          const msg = err?.error?.message || err?.error || 'Registration failed. Please try again.';
+          this.createRoleError   = typeof msg === 'string' ? msg : JSON.stringify(msg);
+          this.createRoleSubmitting = false;
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  resetCreateRoleForm(): void {
+    this.createRoleForm = {
+      firstName: '', lastName: '', email: '', mobile: '',
+      address: '', username: '', password: '', role: 'EMPLOYEE', branchId: null
+    };
+    this.createRoleError  = '';
+    this.createRoleSuccess = '';
   }
 
   filterCat(cat: string): void {

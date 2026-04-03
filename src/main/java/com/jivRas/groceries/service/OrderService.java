@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.security.access.prepost.PreAuthorize;
+
 
 import com.jivRas.groceries.dto.CheckoutRequest;
 import com.jivRas.groceries.dto.OrderItemResponse;
@@ -136,7 +136,6 @@ public class OrderService {
 
     // ──────────────────────────── Admin Methods ────────────────────────────
 
-    @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     public List<AdminOrderResponse> getAllOrdersForAdmin() {
         return orderRepository.findAllByOrderByOrderDateDesc().stream()
                 .map(order -> {
@@ -169,7 +168,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     public Map<String, List<AdminOrderResponse>> getOrdersGroupedByCategory() {
         return getAllOrdersForAdmin().stream()
                 .flatMap(adminOrder -> adminOrder.getItems().stream()

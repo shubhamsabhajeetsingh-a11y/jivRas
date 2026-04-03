@@ -3,7 +3,7 @@ package com.jivRas.groceries.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.jivRas.groceries.entity.Product;
+import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.ProductService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -26,58 +28,87 @@ import lombok.RequiredArgsConstructor;
 public class ProductController {
 
     private final ProductService productService;
+    private final DynamicAuthorizationService dynamicAuthorizationService;
 
-    /**
-     * Add new product — all roles except CUSTOMER.
-     */
+    /** Add new product — roles per DB permissions (all non-CUSTOMER). */
     @PostMapping
-    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
-    public ResponseEntity<Product> addProduct(@RequestBody Product product) {
+    public ResponseEntity<?> addProduct(
+            @RequestBody Product product,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
         return ResponseEntity.ok(productService.save(product));
     }
 
-    /**
-     * Update product (price / stock / name) — all roles except CUSTOMER.
-     */
+    /** Update product — roles per DB permissions. */
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+    public ResponseEntity<?> updateProduct(
+            @PathVariable Long id,
+            @RequestBody Product product,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
         return ResponseEntity.ok(productService.update(id, product));
     }
 
-    /**
-     * Upload product image — all roles except CUSTOMER.
-     */
+    /** Upload product image — roles per DB permissions. */
     @PostMapping("/{id}/image")
-    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
-    public ResponseEntity<String> uploadImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
         productService.uploadImage(id, file);
         return ResponseEntity.ok("Image uploaded successfully");
     }
 
-    /**
-     * Delete product — all roles except CUSTOMER.
-     */
+    /** Delete product — roles per DB permissions. */
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and !hasRole('CUSTOMER')")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<?> deleteProduct(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
         productService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Get all products (including inactive) — open to everyone.
-     */
+    /** Get all products (including inactive) — public. */
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
         return ResponseEntity.ok(productService.findAll());
     }
 
-    /**
-     * Get active products only — open to everyone.
-     */
+    /** Get active products only — public. */
     @GetMapping("/active")
     public ResponseEntity<List<Product>> getActiveProducts() {
         return ResponseEntity.ok(productService.findActive());
+    }
+
+    // ── Utility ─────────────────────────────────────────────────────────────
+
+    private String resolveRole(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) return "";
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .findFirst()
+                .orElse("");
     }
 }

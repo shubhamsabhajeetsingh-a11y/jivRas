@@ -9,13 +9,19 @@
 
     <div class="nav-menu" style="margin-top: 20px;">
       <div class="nav-item" [class.active]="activeTab === 'inventory'" (click)="setTab('inventory')">
-        Inventory
+        <span class="nav-icon">📦</span> Inventory
       </div>
       <div class="nav-item" [class.active]="activeTab === 'orders'" (click)="setTab('orders')">
-        Orders
+        <span class="nav-icon">🧾</span> Orders
       </div>
       <div class="nav-item" [class.active]="activeTab === 'reports'" (click)="setTab('reports')">
-        Reports
+        <span class="nav-icon">📊</span> Reports
+      </div>
+      <!-- Create Role — ADMIN only -->
+      <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
+           [class.active]="activeTab === 'create-role'"
+           (click)="setTab('create-role')">
+        <span class="nav-icon">👤</span> Create Role
       </div>
     </div>
 
@@ -66,6 +72,7 @@
          <ng-container *ngIf="activeTab === 'inventory'">Inventory</ng-container>
          <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
          <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
+         <ng-container *ngIf="activeTab === 'create-role'">Create Role</ng-container>
       </div>
 
       <!-- Branch label (non-admins) or branch switcher (ADMIN) -->
@@ -266,6 +273,128 @@
       <div *ngIf="activeTab === 'reports'" class="placeholder-card" style="background: var(--surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border); text-align: center; margin-top: 20px;">
         <h2 style="font-family: 'Syne', sans-serif; color: var(--accent); margin-bottom: 12px;">Reports Module</h2>
         <p style="color: var(--text-muted); line-height: 1.5;">Reports module coming soon. API not yet available.</p>
+      </div>
+
+      <!-- ── Create Role Tab (ADMIN only) ── -->
+      <div *ngIf="activeTab === 'create-role' && currentUser?.role === 'ADMIN'" class="cr-wrapper">
+        <div class="cr-card">
+          <div class="cr-header">
+            <div class="cr-icon">👤</div>
+            <div>
+              <h2 class="cr-title">Create Employee Account</h2>
+              <p class="cr-subtitle">Register a new Employee or Branch Manager and assign them to a branch.</p>
+            </div>
+          </div>
+
+          <!-- Alerts -->
+          <div *ngIf="createRoleError"   class="cr-alert cr-alert-error">⚠️ {{ createRoleError }}</div>
+          <div *ngIf="createRoleSuccess" class="cr-alert cr-alert-success">✅ {{ createRoleSuccess }}</div>
+
+          <form (ngSubmit)="submitCreateRole()" #crForm="ngForm" autocomplete="off">
+
+            <!-- Row 1: First + Last name -->
+            <div class="cr-row">
+              <div class="cr-field">
+                <label class="cr-label">First Name</label>
+                <input class="cr-input" type="text" [(ngModel)]="createRoleForm.firstName"
+                       name="firstName" placeholder="e.g. Priya" required>
+              </div>
+              <div class="cr-field">
+                <label class="cr-label">Last Name</label>
+                <input class="cr-input" type="text" [(ngModel)]="createRoleForm.lastName"
+                       name="lastName" placeholder="e.g. Sharma" required>
+              </div>
+            </div>
+
+            <!-- Row 2: Email + Mobile -->
+            <div class="cr-row">
+              <div class="cr-field">
+                <label class="cr-label">Email</label>
+                <input class="cr-input" type="email" [(ngModel)]="createRoleForm.email"
+                       name="email" placeholder="priya@jivras.com" required>
+              </div>
+              <div class="cr-field">
+                <label class="cr-label">Mobile</label>
+                <input class="cr-input" type="text" [(ngModel)]="createRoleForm.mobile"
+                       name="mobile" placeholder="+91 9XXXXXXXXX" required>
+              </div>
+            </div>
+
+            <!-- Address -->
+            <div class="cr-field cr-field-full">
+              <label class="cr-label">Address</label>
+              <input class="cr-input" type="text" [(ngModel)]="createRoleForm.address"
+                     name="address" placeholder="Street, City, State" required>
+            </div>
+
+            <!-- Row 3: Username + Password -->
+            <div class="cr-row">
+              <div class="cr-field">
+                <label class="cr-label">Username</label>
+                <input class="cr-input" type="text" [(ngModel)]="createRoleForm.username"
+                       name="username" placeholder="priya_sharma" required autocomplete="new-password">
+              </div>
+              <div class="cr-field">
+                <label class="cr-label">Password</label>
+                <input class="cr-input" type="password" [(ngModel)]="createRoleForm.password"
+                       name="password" placeholder="Min. 8 characters" required autocomplete="new-password">
+              </div>
+            </div>
+
+            <!-- Row 4: Role + Branch -->
+            <div class="cr-row">
+              <div class="cr-field">
+                <label class="cr-label">Role</label>
+
+                <!-- Loading placeholder (no ngModel, no *ngFor) -->
+                <select *ngIf="!createRoleRolesLoaded"
+                        class="cr-input" name="role_loading"
+                        style="appearance:auto;" disabled>
+                  <option>Loading roles…</option>
+                </select>
+
+                <!-- Real select — only mounted AFTER roles array is populated -->
+                <select *ngIf="createRoleRolesLoaded"
+                        class="cr-input"
+                        [(ngModel)]="createRoleForm.role"
+                        name="role"
+                        style="appearance:auto;"
+                        required>
+                  <option value="" disabled>Select a role</option>
+                  <option *ngFor="let r of createRoleRoles" [value]="r">{{ r }}</option>
+                </select>
+
+                <p class="cr-hint" *ngIf="createRoleRolesLoaded && createRoleRoles.length === 0">
+                  No roles found in database.
+                </p>
+              </div>
+              <div class="cr-field">
+                <label class="cr-label">Branch</label>
+                <select class="cr-input" [(ngModel)]="createRoleForm.branchId" name="branchId" style="appearance:auto;" required>
+                  <option [ngValue]="null" disabled>Select a branch</option>
+                  <option *ngFor="let b of createRoleBranches" [ngValue]="b.id">
+                    {{ b.name }} — {{ b.city }}
+                  </option>
+                </select>
+                <p class="cr-hint" *ngIf="createRoleBranches.length === 0 && createRoleBranchesLoaded">No branches found.</p>
+                <p class="cr-hint" *ngIf="!createRoleBranchesLoaded">Loading branches…</p>
+              </div>
+            </div>
+
+
+            <!-- Footer actions -->
+            <div class="cr-actions">
+              <button type="button" class="cr-btn-reset" (click)="resetCreateRoleForm()">Clear</button>
+              <button type="submit" class="cr-btn-submit" [disabled]="createRoleSubmitting">
+                <span *ngIf="!createRoleSubmitting">Create Account</span>
+                <span *ngIf="createRoleSubmitting" class="cr-spinner-row">
+                  <span class="cr-spinner"></span> Creating…
+                </span>
+              </button>
+            </div>
+
+          </form>
+        </div>
       </div>
 
     </div><!-- /content -->

@@ -8,29 +8,75 @@
 
   <div class="form-card">
     <div class="header">
-      <h2>Add New Item</h2>
-      <p>Fill in the details to add a new product to your inventory.</p>
+      <h2>Add New Product</h2>
+      <p *ngIf="isLoadingProfile">Loading your profile…</p>
+      <p *ngIf="!isLoadingProfile && isAdmin">Adding as <strong>Admin</strong> — select a branch below.</p>
+      <p *ngIf="!isLoadingProfile && isBranchManager">Adding to <strong>your branch</strong> inventory.</p>
+      <p *ngIf="!isLoadingProfile && !isAdmin && !isBranchManager">Fill in the details to add a new product.</p>
     </div>
 
     <!-- Alert messages -->
-    <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-    <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+    <div *ngIf="errorMessage" class="alert alert-error">
+      <span class="alert-icon">⚠️</span> {{ errorMessage }}
+    </div>
+    <div *ngIf="successMessage" class="alert alert-success">
+      <span class="alert-icon">✅</span> {{ successMessage }}
+    </div>
 
-    <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
-      
+    <!-- Loading skeleton -->
+    <div *ngIf="isLoadingProfile" class="skeleton-wrapper">
+      <div class="skeleton-line tall"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+
+    <form *ngIf="!isLoadingProfile" [formGroup]="productForm" (ngSubmit)="onSubmit()">
+
+      <!-- ── Branch Selector (ADMIN only) ─────────────────────────── -->
+      <div class="form-group" *ngIf="isAdmin">
+        <label>
+          <span class="label-icon">🏪</span> Branch
+        </label>
+        <select
+          class="input-style"
+          [(ngModel)]="selectedBranchId"
+          [ngModelOptions]="{standalone: true}"
+          style="appearance: auto;">
+          <option [ngValue]="null" disabled>Select a branch</option>
+          <option *ngFor="let branch of branches" [ngValue]="branch.id">
+            {{ branch.name }} — {{ branch.city }}
+          </option>
+        </select>
+        <p class="field-hint" *ngIf="branches.length === 0">No active branches found.</p>
+      </div>
+
+      <!-- ── Branch Manager label (read-only) ─────────────────────── -->
+      <div class="branch-badge" *ngIf="isBranchManager">
+        <span class="badge-icon">📍</span>
+        <span>Stock will be added to <strong>your branch</strong> (ID: {{ selectedBranchId }})</span>
+      </div>
+
+      <!-- ── Product Name ─────────────────────────────────────────── -->
       <div class="form-group">
-        <label>Product Name</label>
+        <label><span class="label-icon">📦</span> Product Name</label>
         <input formControlName="name" class="input-style" type="text" placeholder="e.g. Basmati Rice">
+        <p class="field-error" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
+          Name must be at least 3 characters.
+        </p>
       </div>
 
+      <!-- ── Description ─────────────────────────────────────────── -->
       <div class="form-group">
-        <label>Description</label>
-        <textarea formControlName="description" class="input-style" rows="3" placeholder="Describe the product quality, origin, etc."></textarea>
+        <label><span class="label-icon">📝</span> Description</label>
+        <textarea formControlName="description" class="input-style" rows="3"
+          placeholder="Describe quality, origin, packaging…"></textarea>
       </div>
 
+      <!-- ── Category ────────────────────────────────────────────── -->
       <div class="form-group" *ngIf="!isAddingNewCategory">
-        <label>Category</label>
-        <select formControlName="categoryId" class="input-style" (change)="onCategoryChange($event)" style="appearance: auto;">
+        <label><span class="label-icon">🏷️</span> Category</label>
+        <select formControlName="categoryId" class="input-style"
+          (change)="onCategoryChange($event)" style="appearance: auto;">
           <option value="" disabled selected>Select a category</option>
           <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
           <option value="NEW" style="font-weight:bold; color:#d57937;">+ Add New Category</option>
@@ -38,47 +84,64 @@
       </div>
 
       <div class="form-group" *ngIf="isAddingNewCategory">
-        <label>New Category Name</label>
+        <label><span class="label-icon">🏷️</span> New Category Name</label>
         <div style="display: flex; gap: 8px;">
-          <input [(ngModel)]="newCategoryName" [ngModelOptions]="{standalone: true}" class="input-style" type="text" placeholder="e.g. Dairy Products">
-          <button type="button" class="btn-submit" style="padding: 0 16px; width: auto;" (click)="saveNewCategory()">Save</button>
-          <button type="button" style="padding: 0 16px; width: auto; background:#e0e0e0; color:#333; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" (click)="cancelNewCategory()">Cancel</button>
+          <input [(ngModel)]="newCategoryName" [ngModelOptions]="{standalone: true}"
+            class="input-style" type="text" placeholder="e.g. Dairy Products">
+          <button type="button" class="btn-sm btn-accent" (click)="saveNewCategory()">Save</button>
+          <button type="button" class="btn-sm btn-muted" (click)="cancelNewCategory()">Cancel</button>
         </div>
       </div>
 
+      <!-- ── Price + Stock ────────────────────────────────────────── -->
       <div class="row">
         <div class="form-group half">
-          <label>Price (₹ / Kg)</label>
-          <input formControlName="pricePerKg" class="input-style" type="number" placeholder="0.00">
+          <label><span class="label-icon">₹</span> Price (per Kg)</label>
+          <input formControlName="pricePerKg" class="input-style" type="number" min="0" step="0.01" placeholder="0.00">
         </div>
         <div class="form-group half">
-          <label>Initial Stock (Kg)</label>
-          <input formControlName="availableStockKg" class="input-style" type="number" placeholder="0">
+          <label><span class="label-icon">⚖️</span> Initial Stock (Kg)</label>
+          <input formControlName="availableStockKg" class="input-style" type="number" min="0" step="0.1" placeholder="0">
         </div>
       </div>
 
+      <!-- ── Low Stock Threshold ──────────────────────────────────── -->
       <div class="form-group">
-        <label>Product Image</label>
-        <div class="file-upload-area">
-          <input type="file" (change)="onFileSelected($event)" accept="image/*">
-          <div class="upload-icon">📸</div>
-          <div class="upload-text">
-            <strong>Click to upload</strong> or drag and drop<br>
-            PNG, JPG or WEBP (Max 5MB)
-          </div>
-        </div>
+        <label><span class="label-icon">🔔</span> Low Stock Threshold (Kg)</label>
+        <input formControlName="lowStockThreshold" class="input-style" type="number" min="0" step="0.1" placeholder="5">
+        <p class="field-hint">You'll be alerted when stock falls below this value. Default: 5 kg.</p>
+      </div>
 
-        <!-- Image Preview -->
-        <div class="preview-container" *ngIf="imagePreview">
-          <img [src]="imagePreview" class="preview-img" alt="Product preview">
+      <!-- ── Image Upload ─────────────────────────────────────────── -->
+      <div class="form-group">
+        <label><span class="label-icon">📸</span> Product Image</label>
+        <div class="file-upload-area" [class.has-file]="!!imagePreview">
+          <input type="file" (change)="onFileSelected($event)" accept="image/*">
+          <ng-container *ngIf="!imagePreview">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">
+              <strong>Click to upload</strong> or drag and drop<br>
+              PNG, JPG or WEBP (Max 5MB)
+            </div>
+          </ng-container>
+          <ng-container *ngIf="imagePreview">
+            <img [src]="imagePreview" class="preview-img" alt="Product preview">
+            <div class="preview-overlay">
+              <span>Click to change</span>
+            </div>
+          </ng-container>
         </div>
       </div>
 
-      <button type="submit" 
+      <!-- ── Submit ───────────────────────────────────────────────── -->
+      <button type="submit"
               class="btn-submit"
-              [disabled]="productForm.invalid || !selectedFile">
-        Create Product
+              [disabled]="productForm.invalid || !selectedFile || isSubmitting || !selectedBranchId">
+        <span *ngIf="!isSubmitting">Add Product to Inventory</span>
+        <span *ngIf="isSubmitting" class="spinner-row">
+          <span class="spinner"></span> Saving…
+        </span>
       </button>
     </form>
   </div>
-</div>
+</div>

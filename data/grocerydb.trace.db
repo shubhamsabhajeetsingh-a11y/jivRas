@@ -511,3 +511,59 @@ select c1_0.id,c1_0.account_created,c1_0.address_line,c1_0.city,c1_0.mobile,c1_0
 	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491)
 	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
 	at java.base/java.lang.Thread.run(Thread.java:833)
+2026-04-03 13:57:20.069802+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM EMPLOYEE_USERS \000d\000aUPDATE [*]EMPLOYEE_USER SET ROLE ='MANAGER' WHERE ID =34"; SQL statement:
+SELECT * FROM EMPLOYEE_USERS 
+UPDATE EMPLOYEE_USER SET ROLE ='MANAGER' WHERE ID =34 [42000-232]
+2026-04-03 13:58:14.617559+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+UPDATE EMPLOYEE_USER SET ROLE ='MANAGER' WHERE ID =34 [42102-232]
+2026-04-03 13:59:18.316216+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+UPDATE EMPLOYEE_USER 
+SET ROLE = 'MANAGER' 
+WHERE ID = 34 [42102-232]
+2026-04-03 13:59:38.460992+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+SELECT * FROM EMPLOYEE_USER [42102-232]
+2026-04-03 13:59:38.461988+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+UPDATE EMPLOYEE_USER 
+SET ROLE = 'MANAGER' 
+WHERE ID = 34 [42102-232]
+2026-04-03 13:59:40.973224+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+SELECT * FROM EMPLOYEE_USER [42102-232]
+2026-04-03 13:59:40.974221+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+UPDATE EMPLOYEE_USER 
+SET ROLE = 'MANAGER' 
+WHERE ID = 34 [42102-232]
+2026-04-03 13:59:56.274564+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "[*]EMPLOYEE_USERS \000d\000a\000d\000a\000d\000aUPDATE EMPLOYEE_USER \000d\000aSET ROLE = 'MANAGER' \000d\000aWHERE ID = 34"; expected "EXPLAIN, EXECUTE"; SQL statement:
+EMPLOYEE_USERS 
+
+
+UPDATE EMPLOYEE_USER 
+SET ROLE = 'MANAGER' 
+WHERE ID = 34 [42001-232]
+2026-04-03 14:00:09.817763+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM EMPLOYEE_USERS \000d\000a\000d\000a\000d\000aUPDATE [*]EMPLOYEE_USER \000d\000aSET ROLE = 'MANAGER' \000d\000aWHERE ID = 34"; SQL statement:
+SELECT * FROM EMPLOYEE_USERS 
+
+
+UPDATE EMPLOYEE_USER 
+SET ROLE = 'MANAGER' 
+WHERE ID = 34 [42000-232]
+2026-04-03 14:00:40.326100+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+UPDATE EMPLOYEE_USER SET ROLE = 'MANAGER' WHERE ID = 34 [42102-232]
+2026-04-03 14:00:53.716768+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+UPDATE EMPLOYEE_USER SET ROLE = 'MANAGER' WHERE ID = 34 [42102-232]
+2026-04-03 14:15:20.099401+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEEUSER" not found; SQL statement:
+SELECT DISTINCT e.role FROM EmployeeUser e WHERE e.role IS NOT NULL AND e.role <> 'ADMIN' [42102-232]
+2026-04-03 14:15:29.801799+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
+SELECT DISTINCT e.role FROM Employee_User e WHERE e.role IS NOT NULL AND e.role <> 'ADMIN' [42102-232]

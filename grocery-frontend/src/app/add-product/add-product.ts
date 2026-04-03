@@ -1,8 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ProductService } from '../core/services/product.service';
+import { UserService } from '../core/services/user.service';
+import { BranchService } from '../core/services/branch.service';
+import { InventoryService } from '../core/services/inventory.service';
 import { Router, RouterLink } from '@angular/router';
+import { UserProfile, Branch } from '../models/inventory.model';
 
 @Component({
   selector: 'app-add-product',
@@ -17,7 +21,15 @@ export class AddProduct implements OnInit {
   imagePreview: string | null = null;
   successMessage: string = '';
   errorMessage: string = '';
+  isSubmitting: boolean = false;
 
+  // User + Branch state
+  currentUser?: UserProfile;
+  branches: Branch[] = [];
+  selectedBranchId: number | null = null;
+  isLoadingProfile: boolean = false;
+
+  // Category state
   categories: any[] = [];
   isAddingNewCategory = false;
   newCategoryName = '';
@@ -25,33 +37,92 @@ export class AddProduct implements OnInit {
   constructor(
     private fb: FormBuilder,
     private productService: ProductService,
-    private router: Router
+    private userService: UserService,
+    private branchService: BranchService,
+    private inventoryService: InventoryService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
     this.productForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', Validators.required],
-      categoryId: ['', Validators.required],
-      pricePerKg: [null, [Validators.required, Validators.min(1)]],
-      availableStockKg: [null, [Validators.required, Validators.min(0)]],
-      imageUrl: [''] 
+      name:               ['', [Validators.required, Validators.minLength(3)]],
+      description:        ['', Validators.required],
+      categoryId:         ['', Validators.required],
+      pricePerKg:         [null, [Validators.required, Validators.min(0.01)]],
+      availableStockKg:   [null, [Validators.required, Validators.min(0)]],
+      lowStockThreshold:  [5,   [Validators.required, Validators.min(0)]],
+      imageUrl:           ['']
     });
 
-    this.loadCategories();
+    if (isPlatformBrowser(this.platformId)) {
+      this.isLoadingProfile = true;
+      this.loadUserProfile();
+      this.loadCategories();
+    }
+  }
+
+  get isAdmin(): boolean { return this.currentUser?.role === 'ADMIN'; }
+  get isBranchManager(): boolean { return this.currentUser?.role === 'BRANCH_MANAGER'; }
+
+  // ── Data loaders ────────────────────────────────────────────────────
+
+  loadUserProfile(): void {
+    this.userService.getUserProfile().subscribe({
+      next: (profile) => {
+        this.currentUser = profile;
+        this.isLoadingProfile = false;
+
+        if (profile.role === 'ADMIN') {
+          this.loadBranches();
+        } else {
+          // BRANCH_MANAGER or EMPLOYEE — use their own branchId
+          this.selectedBranchId = profile.branchId > 0 ? profile.branchId : null;
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load user profile:', err);
+        this.errorMessage = 'Could not load user profile. Please refresh the page.';
+        this.isLoadingProfile = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadBranches(): void {
+    this.branchService.getAllActiveBranches().subscribe({
+      next: (branches) => {
+        this.branches = branches;
+        if (branches.length > 0) {
+          this.selectedBranchId = branches[0].id;
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load branches:', err);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   loadCategories(): void {
     this.productService.getCategories().subscribe({
-      next: (data) => this.categories = data,
+      next: (data) => {
+        this.categories = data;
+        this.cdr.detectChanges();
+      },
       error: (err) => console.error('Failed to load categories', err)
     });
   }
 
+  // ── Category helpers ────────────────────────────────────────────────
+
   onCategoryChange(event: any): void {
     if (event.target.value === 'NEW') {
       this.isAddingNewCategory = true;
-      this.productForm.get('categoryId')?.setValue(''); // Clear standard validation since it's hidden
+      this.productForm.get('categoryId')?.setValue('');
     }
   }
 
@@ -65,7 +136,7 @@ export class AddProduct implements OnInit {
         this.newCategoryName = '';
       },
       error: (err) => {
-        this.errorMessage = 'Failed to create category';
+        this.errorMessage = 'Failed to create category.';
         console.error(err);
       }
     });
@@ -76,81 +147,95 @@ export class AddProduct implements OnInit {
     this.newCategoryName = '';
   }
 
-  // New method: Captures the file when you choose it in the HTML
+  // ── Image handling ──────────────────────────────────────────────────
+
   onFileSelected(event: any): void {
-    const file = event.target.files[0];
+    const file: File = event.target.files[0];
     if (file) {
       this.selectedFile = file;
-      
-      // Create preview
       const reader = new FileReader();
-      reader.onload = () => {
-        this.imagePreview = reader.result as string;
-      };
+      reader.onload = () => { this.imagePreview = reader.result as string; };
       reader.readAsDataURL(file);
     }
   }
+
+  // ── Submit ──────────────────────────────────────────────────────────
 
   onSubmit(): void {
     this.errorMessage = '';
     this.successMessage = '';
 
-    // 1. Validation Check
     if (this.productForm.invalid) {
-      this.errorMessage = 'Please fill all text fields correctly.';
+      this.errorMessage = 'Please fill all required fields correctly.';
       return;
     }
-
     if (!this.selectedFile) {
-      this.errorMessage = 'Please select an image file from your PC.';
+      this.errorMessage = 'Please select a product image.';
+      return;
+    }
+    if (!this.selectedBranchId) {
+      this.errorMessage = this.isAdmin
+        ? 'Please select a branch.'
+        : 'No branch assigned to your account. Contact admin.';
       return;
     }
 
-    console.log('Step 1: Creating Product...');
+    this.isSubmitting = true;
 
-    const formValue = this.productForm.value;
+    const fv = this.productForm.value;
     const productPayload = {
-      name: formValue.name,
-      description: formValue.description,
-      pricePerKg: formValue.pricePerKg,
-      availableStockKg: formValue.availableStockKg,
-      category: { id: formValue.categoryId }
+      name:             fv.name,
+      description:      fv.description,
+      pricePerKg:       fv.pricePerKg,
+      availableStockKg: fv.availableStockKg,
+      category:         { id: fv.categoryId }
     };
 
-    // 2. Submit Product Data (Step 1)
+    // Step 1 — Create product globally
     this.productService.addProduct(productPayload).subscribe({
       next: (savedProduct: any) => {
-        console.log('Product Created! ID:', savedProduct.id);
-        
-        // 3. Upload Image using the new ID (Step 2)
-        this.uploadImage(savedProduct.id);
+        // Step 2 — Upload image
+        this.productService.uploadProductImage(savedProduct.id, this.selectedFile!).subscribe({
+          next: () => {
+            // Step 3 — Add to branch inventory
+            this.addToInventory(savedProduct.id);
+          },
+          error: (err) => {
+            console.error('Image upload failed:', err);
+            // Image failed but product created — continue with inventory anyway
+            this.addToInventory(savedProduct.id);
+          }
+        });
       },
       error: (err) => {
-        console.error('Error creating product:', err);
-        this.errorMessage = 'Failed to create product. Check console.';
+        console.error('Product creation failed:', err);
+        this.errorMessage = 'Failed to create product. Please try again.';
+        this.isSubmitting = false;
       }
     });
   }
 
-  // Helper method to handle the image upload
-  uploadImage(productId: number): void {
-    if (!this.selectedFile) return;
+  private addToInventory(productId: number): void {
+    const fv = this.productForm.value;
+    const stockPayload = {
+      branchId:          this.selectedBranchId!,
+      productId:         productId,
+      availableStockKg:  fv.availableStockKg,
+      lowStockThreshold: fv.lowStockThreshold
+    };
 
-    console.log('Step 2: Uploading Image...');
-
-    this.productService.uploadProductImage(productId, this.selectedFile).subscribe({
-      next: (response) => {
-        console.log('Image Upload Success:', response);
-        this.successMessage = 'Product and Image saved successfully!';
-        
-        // Redirect after 1.5 seconds
-        setTimeout(() => {
-          this.router.navigate(['/inventory-dashboard']);
-        }, 1500);
+    this.inventoryService.updateStock(stockPayload).subscribe({
+      next: () => {
+        this.successMessage = '✅ Product added to branch inventory successfully!';
+        this.isSubmitting = false;
+        setTimeout(() => this.router.navigate(['/inventory-dashboard']), 1500);
       },
       error: (err) => {
-        console.error('Image Upload Failed:', err);
-        this.errorMessage = 'Product created, but Image Upload failed.';
+        console.error('Inventory stock failed:', err);
+        this.errorMessage =
+          '⚠️ Product was created globally, but adding it to branch inventory failed. ' +
+          'Please add it manually from the inventory dashboard.';
+        this.isSubmitting = false;
       }
     });
   }

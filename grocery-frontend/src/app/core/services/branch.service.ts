@@ -20,4 +20,12 @@ export class BranchService {
   getAllActiveBranches(): Observable<Branch[]> {
     return this.http.get<Branch[]>(`${this.baseUrl}/active`);
   }
+
+  /**
+   * Get all branches (no /active filter).
+   * GET /api/branches
+   */
+  getAllBranches(): Observable<Branch[]> {
+    return this.http.get<Branch[]>(this.baseUrl);
+  }
 }

@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity  // Enables @PreAuthorize on controller methods
+@EnableMethodSecurity  // Kept for future method-level overrides; main enforcement is via DynamicAuthorizationService
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
@@ -40,40 +40,37 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
-                // Preflight
+                // Preflight requests — always permitted
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Auth endpoints — public
-                .requestMatchers("/api/users/**").permitAll()
+                // ── Public auth endpoints ───────────────────────────────────
+                // login, register, refresh, logout are all under /api/users/**
+                .requestMatchers("/api/users/login",
+                                 "/api/users/register",
+                                 "/api/users/refresh",
+                                 "/api/users/logout").permitAll()
+
+                // H2 console (dev only)
                 .requestMatchers("/h2-console/**").permitAll()
 
-                // Static resources
+                // ── Truly public read-only resources ────────────────────────
                 .requestMatchers("/images/**").permitAll()
                 .requestMatchers("/api/locations/**").permitAll()
-
-                // Products: GET is public, 
-                // POST/PUT/DELETE = ADMIN only
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
-                // Cart: guests allowed (X-Guest-Id used)
+                // Cart: guests allowed via X-Guest-Id header
                 .requestMatchers("/api/cart/**").permitAll()
 
-                // Orders — SPLIT by path:
-                // Admin endpoints: ADMIN or EMPLOYEE only
-                .requestMatchers("/api/orders/admin/**").hasAnyRole("ADMIN", "EMPLOYEE")
-  
-                // Checkout + get own order: 
-                // authenticated users only
-                .requestMatchers("/api/orders/checkout", "/api/orders/{id}").authenticated()
+                // ── Role-permissions CRUD ────────────────────────────────────
+                // The controller itself enforces ADMIN via JWT authority check.
+                // Needs to be authenticated (valid JWT) at minimum — no DB check
+                // here to avoid the circular bootstrap problem.
+                .requestMatchers("/api/permissions/**").authenticated()
 
-                // Categories: public read
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                .requestMatchers("/api/categories/**").hasRole("ADMIN")
-
-                // Everything else: authenticated
+                // ── All other endpoints: must have a valid JWT ───────────────
+                // Fine-grained role enforcement is done by DynamicAuthorizationService
+                // inside each controller method.
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
@@ -104,7 +101,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Allow Angular frontend
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Guest-Id"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

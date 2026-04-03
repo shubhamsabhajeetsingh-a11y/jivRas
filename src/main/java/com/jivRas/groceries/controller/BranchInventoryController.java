@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,20 +18,19 @@ import com.jivRas.groceries.dto.BranchInventoryResponse;
 import com.jivRas.groceries.entity.EmployeeUser;
 import com.jivRas.groceries.repository.EmployeeUserRepository;
 import com.jivRas.groceries.service.BranchInventoryService;
+import com.jivRas.groceries.service.DynamicAuthorizationService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/inventory")
+@RequiredArgsConstructor
 public class BranchInventoryController {
 
     private final BranchInventoryService branchInventoryService;
     private final EmployeeUserRepository employeeUserRepository;
-
-    public BranchInventoryController(
-            BranchInventoryService branchInventoryService,
-            EmployeeUserRepository employeeUserRepository) {
-        this.branchInventoryService = branchInventoryService;
-        this.employeeUserRepository = employeeUserRepository;
-    }
+    private final DynamicAuthorizationService dynamicAuthorizationService;
 
     /**
      * GET /api/inventory/my-branch
@@ -41,10 +40,18 @@ public class BranchInventoryController {
      * This ensures the employee can ONLY see their own branch.
      */
     @GetMapping("/my-branch")
-    @PreAuthorize("hasAnyRole('EMPLOYEE', 'BRANCH_MANAGER', 'ADMIN')")
-    public ResponseEntity<?> getMyBranchInventory(Principal principal) {
+    public ResponseEntity<?> getMyBranchInventory(
+            Principal principal,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
         if (principal == null) {
             return ResponseEntity.status(401).body("Unauthorized");
+        }
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
         }
 
         Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(principal.getName());
@@ -67,8 +74,16 @@ public class BranchInventoryController {
      * For ADMIN only — can view any branch's inventory.
      */
     @GetMapping("/branch/{branchId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getBranchInventory(@PathVariable Long branchId) {
+    public ResponseEntity<?> getBranchInventory(
+            @PathVariable Long branchId,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
         List<BranchInventoryResponse> inventory = branchInventoryService.getInventoryByBranch(branchId);
         return ResponseEntity.ok(inventory);
     }
@@ -77,13 +92,19 @@ public class BranchInventoryController {
      * POST /api/inventory/stock
      *
      * Add or update stock for a branch+product.
-     * ADMIN can update any branch. EMPLOYEE/BRANCH_MANAGER can only update their own branch (enforced here).
+     * ADMIN can update any branch. EMPLOYEE/BRANCH_MANAGER can only update their own branch.
      */
     @PostMapping("/stock")
-    @PreAuthorize("hasAnyRole('EMPLOYEE', 'BRANCH_MANAGER', 'ADMIN')")
     public ResponseEntity<?> addOrUpdateStock(
             @RequestBody BranchInventoryRequest request,
-            Principal principal) {
+            Principal principal,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
 
         // For non-admin users, enforce that they can only update their own branch
         Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(principal.getName());
@@ -99,5 +120,15 @@ public class BranchInventoryController {
 
         BranchInventoryResponse response = branchInventoryService.addOrUpdateStock(request);
         return ResponseEntity.ok(response);
+    }
+
+    // ── Utility ─────────────────────────────────────────────────────────────
+
+    private String resolveRole(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) return "";
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .findFirst()
+                .orElse("");
     }
 }
