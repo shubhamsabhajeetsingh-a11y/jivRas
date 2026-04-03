@@ -15,7 +15,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,11 +29,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.jivRas.groceries.config.JwtService;
 import com.jivRas.groceries.dto.CreateCustomerRequest;
 import com.jivRas.groceries.dto.CreateEmployeeRequest;
+import com.jivRas.groceries.dto.EmployeeDetailResponse;
 import com.jivRas.groceries.dto.UserProfileDTO;
+import com.jivRas.groceries.entity.Branch;
 import com.jivRas.groceries.entity.Customer;
 import com.jivRas.groceries.entity.EmployeeUser;
 import com.jivRas.groceries.entity.RefreshToken;
 import com.jivRas.groceries.kafka.KafkaEventProducer;
+import com.jivRas.groceries.repository.BranchRepository;
 import com.jivRas.groceries.repository.CustomerRepository;
 import com.jivRas.groceries.repository.EmployeeUserRepository;
 import com.jivRas.groceries.repository.RefreshTokenRepository;
@@ -48,12 +53,14 @@ public class UserController {
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final DynamicAuthorizationService dynamicAuthorizationService;
+    private final BranchRepository branchRepository;
 
     public UserController(CustomerRepository customerRepository, EmployeeUserRepository employeeUserRepository,
             PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
             KafkaEventProducer kafkaEventProducer, JwtService jwtService,
             DaoAuthenticationProvider authenticationProvider, RefreshTokenRepository refreshTokenRepository,
-            DynamicAuthorizationService dynamicAuthorizationService) {
+            DynamicAuthorizationService dynamicAuthorizationService,
+            BranchRepository branchRepository) {
         this.customerRepository = customerRepository;
         this.employeeUserRepository = employeeUserRepository;
         this.passwordEncoder = passwordEncoder;
@@ -62,6 +69,7 @@ public class UserController {
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
         this.dynamicAuthorizationService = dynamicAuthorizationService;
+        this.branchRepository = branchRepository;
     }
 
     private boolean usernameExists(String username) {
@@ -313,6 +321,108 @@ public class UserController {
         List<String> roles = employeeUserRepository.findDistinctRolesExcludingAdmin();
         System.out.println("Roles fetched from DB: " + roles);
         return ResponseEntity.ok(roles);
+    }
+
+    // ── Role Definition tab APIs ─────────────────────────────────────────────
+
+    /**
+     * GET /api/users/employees
+     * ADMIN only — returns all employees (excluding ADMIN) enriched with branchName.
+     */
+    @GetMapping("/employees")
+    public ResponseEntity<?> getAllEmployees(
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
+        List<EmployeeUser> employees = employeeUserRepository.findAllByRoleNot("ADMIN");
+        List<EmployeeDetailResponse> result = employees.stream().map(emp -> {
+            String branchName = "—";
+            if (emp.getBranchId() != null) {
+                Optional<Branch> branch = branchRepository.findById(emp.getBranchId());
+                branchName = branch.map(Branch::getName).orElse("Unknown");
+            }
+            return EmployeeDetailResponse.builder()
+                    .id(emp.getId())
+                    .firstName(emp.getFirstName())
+                    .lastName(emp.getLastName())
+                    .email(emp.getEmail())
+                    .mobile(emp.getMobile())
+                    .address(emp.getAddress())
+                    .username(emp.getUsername())
+                    .role(emp.getRole())
+                    .branchId(emp.getBranchId())
+                    .branchName(branchName)
+                    .build();
+        }).toList();
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * PUT /api/users/employees/{id}
+     * ADMIN only — update mobile and address of an employee.
+     */
+    @PutMapping("/employees/{id}")
+    public ResponseEntity<?> updateEmployee(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
+        return employeeUserRepository.findById(id).map(emp -> {
+            if (body.containsKey("mobile"))  emp.setMobile(body.get("mobile"));
+            if (body.containsKey("address")) emp.setAddress(body.get("address"));
+            EmployeeUser saved = employeeUserRepository.save(emp);
+
+            String branchName = "—";
+            if (saved.getBranchId() != null) {
+                branchName = branchRepository.findById(saved.getBranchId())
+                        .map(Branch::getName).orElse("Unknown");
+            }
+            return ResponseEntity.ok((Object) EmployeeDetailResponse.builder()
+                    .id(saved.getId()).firstName(saved.getFirstName()).lastName(saved.getLastName())
+                    .email(saved.getEmail()).mobile(saved.getMobile()).address(saved.getAddress())
+                    .username(saved.getUsername()).role(saved.getRole())
+                    .branchId(saved.getBranchId()).branchName(branchName).build());
+        }).orElseGet(() -> ResponseEntity.status(404).body("Employee not found"));
+    }
+
+    /**
+     * PUT /api/users/employees/{id}/reset-password
+     * ADMIN only — BCrypt-encodes and saves a new password.
+     */
+    @PutMapping("/employees/{id}/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
+        String newPassword = body.get("newPassword");
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            return ResponseEntity.badRequest().body("Password must be at least 6 characters");
+        }
+
+        return employeeUserRepository.findById(id).map(emp -> {
+            emp.setPassword(passwordEncoder.encode(newPassword));
+            employeeUserRepository.save(emp);
+            return ResponseEntity.ok((Object) "Password reset successfully");
+        }).orElseGet(() -> ResponseEntity.status(404).body("Employee not found"));
     }
 
     // ── Utility ─────────────────────────────────────────────────────────────

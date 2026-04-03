@@ -152,4 +152,51 @@ public class RolePermissionController {
         dynamicAuthorizationService.evictPermissionCache();
         return ResponseEntity.ok("Permission deleted successfully");
     }
+
+    // ──────────────────────── GET /api/permissions/role/{roleName} ───────────
+
+    /**
+     * List all permission entries for a specific role.
+     * Used by the Role Definition tab to lazily load permissions per role.
+     * ADMIN only.
+     */
+    @GetMapping("/role/{roleName}")
+    public ResponseEntity<?> getPermissionsByRole(
+            @PathVariable String roleName,
+            Authentication authentication) {
+
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(403).body("Access denied: ADMIN only");
+        }
+
+        List<RolePermission> permissions = rolePermissionRepository.findByRole(roleName.toUpperCase());
+        return ResponseEntity.ok(permissions);
+    }
+
+    // ──────────────────────── PUT /api/permissions/{id}/toggle ──────────────
+
+    /**
+     * Toggle the isAllowed boolean on a single permission entry.
+     * Used by the inline toggles in the Role Definition permissions table.
+     * ADMIN only.
+     */
+    @PutMapping("/{id}/toggle")
+    public ResponseEntity<?> togglePermission(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(403).body("Access denied: ADMIN only");
+        }
+
+        return rolePermissionRepository.findById(id)
+                .map(rp -> {
+                    rp.setAllowed(!rp.isAllowed());
+                    RolePermission saved = rolePermissionRepository.save(rp);
+                    dynamicAuthorizationService.evictPermissionCache();
+                    return ResponseEntity.ok((Object) saved);
+                })
+                .orElseGet(() -> ResponseEntity.status(404)
+                        .body("Permission with id=" + id + " not found"));
+    }
 }

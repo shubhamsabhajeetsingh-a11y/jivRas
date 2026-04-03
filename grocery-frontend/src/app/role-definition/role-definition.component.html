@@ -1,0 +1,179 @@
+<div class="rd-wrap">
+
+  <!-- Header row -->
+  <div class="rd-header">
+    <div>
+      <h2 class="rd-title">🔐 Role Definition</h2>
+      <p class="rd-subtitle">Manage employees, edit details, reset passwords and configure role permissions.</p>
+    </div>
+    <button class="rd-create-btn" (click)="goToCreateRole()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      + Create Employee Account
+    </button>
+  </div>
+
+  <!-- Global error -->
+  <div *ngIf="globalError" class="rd-alert rd-alert-error">⚠️ {{ globalError }}</div>
+
+  <!-- Loading skeleton -->
+  <div *ngIf="loading" class="rd-loading">
+    <div class="rd-spinner"></div>
+    <span>Loading employees…</span>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <!-- Search + role filter row -->
+    <div class="rd-controls">
+      <div class="rd-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
+               placeholder="Search by name, username or role…" class="rd-search" id="rdSearchInput">
+      </div>
+
+      <div class="rd-role-tabs">
+        <button *ngFor="let r of availableRoles"
+                class="rd-role-tab"
+                [class.active]="activeRoleFilter === r"
+                (click)="setRoleFilter(r)">
+          {{ r }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="filteredEmployees.length === 0" class="rd-empty">
+      <div class="rd-empty-icon">👥</div>
+      <p>No employees found.</p>
+    </div>
+
+    <!-- Employee cards -->
+    <div class="rd-cards">
+      <div *ngFor="let emp of filteredEmployees" class="rd-card">
+
+        <!-- Card header -->
+        <div class="rdc-header">
+          <div class="rdc-avatar">{{ (emp.firstName || '?')[0] }}{{ (emp.lastName || '')[0] }}</div>
+          <div class="rdc-info">
+            <div class="rdc-name">{{ emp.firstName }} {{ emp.lastName }}</div>
+            <div class="rdc-meta">
+              <span class="rdc-email">{{ emp.email }}</span>
+              <span class="rdc-username">@{{ emp.username }}</span>
+            </div>
+          </div>
+          <div class="rdc-right">
+            <span class="rdc-badge" [ngClass]="getRoleBadgeClass(emp.role)">{{ emp.role }}</span>
+            <span class="rdc-branch">🏪 {{ emp.branchName }}</span>
+          </div>
+        </div>
+
+        <!-- Alerts -->
+        <div *ngIf="emp.saveSuccess" class="rdc-alert rdc-alert-success">✅ {{ emp.saveSuccess }}</div>
+        <div *ngIf="emp.saveError"   class="rdc-alert rdc-alert-error">⚠️ {{ emp.saveError }}</div>
+        <div *ngIf="emp.pwSuccess"   class="rdc-alert rdc-alert-success">✅ {{ emp.pwSuccess }}</div>
+        <div *ngIf="emp.pwError"     class="rdc-alert rdc-alert-error">⚠️ {{ emp.pwError }}</div>
+
+        <!-- Editable details -->
+        <div class="rdc-fields">
+          <div class="rdc-field">
+            <label class="rdc-label">Mobile</label>
+            <input class="rdc-input" type="text" [(ngModel)]="emp.mobile" placeholder="Mobile number">
+          </div>
+          <div class="rdc-field rdc-field-full">
+            <label class="rdc-label">Address</label>
+            <input class="rdc-input" type="text" [(ngModel)]="emp.address" placeholder="Address">
+          </div>
+        </div>
+
+        <!-- Password reset -->
+        <div class="rdc-pw-row">
+          <div class="rdc-pw-label">Password</div>
+          <div class="rdc-pw-display" *ngIf="!emp.showPasswordReset">
+            <span class="rdc-dots">••••••••</span>
+            <button class="rdc-pw-btn" (click)="togglePasswordReset(emp)">Reset Password</button>
+          </div>
+          <div class="rdc-pw-inline" *ngIf="emp.showPasswordReset">
+            <input class="rdc-input rdc-pw-input" type="password" [(ngModel)]="emp.newPassword"
+                   placeholder="New password (min 6 chars)" id="pwReset_{{emp.id}}">
+            <button class="rdc-pw-confirm" (click)="confirmPasswordReset(emp)">Confirm</button>
+            <button class="rdc-pw-cancel" (click)="togglePasswordReset(emp)">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Permissions section (lazy) -->
+        <div class="rdc-perms-section">
+          <div class="rdc-perms-toggle" (click)="togglePermissions(emp)">
+            <span class="rdc-perms-label">Permissions for role: <strong>{{ emp.role }}</strong></span>
+            <svg class="rdc-chevron" [class.expanded]="emp.permissionsExpanded"
+                 width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+
+          <div class="rdc-perms-body" *ngIf="emp.permissionsExpanded">
+            <div *ngIf="emp.permissionsLoading" class="rdc-perms-loading">
+              <span class="rd-spinner-sm"></span> Loading permissions…
+            </div>
+
+            <div *ngIf="!emp.permissionsLoading && emp.permissions!.length === 0" class="rdc-perms-empty">
+              No permission entries found for {{ emp.role }}.
+            </div>
+
+            <table *ngIf="!emp.permissionsLoading && emp.permissions!.length > 0" class="rdc-perms-table">
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Method</th>
+                  <th>Allowed</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of emp.permissions">
+                  <td class="perm-endpoint">{{ p.endpoint }}</td>
+                  <td>
+                    <span class="perm-method" [ngClass]="'method-' + p.httpMethod.toLowerCase()">
+                      {{ p.httpMethod }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="perm-toggle"
+                            [class.allowed]="p.allowed"
+                            [class.denied]="!p.allowed"
+                            [disabled]="p.toggling"
+                            (click)="togglePermissionRow(emp, p)"
+                            [title]="p.allowed ? 'Click to deny' : 'Click to allow'">
+                      <span *ngIf="!p.toggling">{{ p.allowed ? '✅ Allowed' : '🚫 Denied' }}</span>
+                      <span *ngIf="p.toggling" class="rd-spinner-sm"></span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p class="rdc-perms-warning">
+              ⚠️ Changes to permissions affect <strong>ALL employees</strong> with the {{ emp.role }} role.
+            </p>
+          </div>
+        </div>
+
+        <!-- Save button -->
+        <div class="rdc-footer">
+          <button class="rdc-save-btn" (click)="saveEmployee(emp)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save Changes
+          </button>
+        </div>
+
+      </div><!-- /rd-card -->
+    </div><!-- /rd-cards -->
+
+  </ng-container>
+</div>

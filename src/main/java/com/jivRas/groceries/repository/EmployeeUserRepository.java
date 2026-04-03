@@ -12,4 +12,7 @@ public interface EmployeeUserRepository extends JpaRepository<EmployeeUser, Long
 
     @Query("SELECT DISTINCT e.role FROM EmployeeUser e WHERE e.role IS NOT NULL AND e.role <> 'ADMIN'")
     List<String> findDistinctRolesExcludingAdmin();
+
+    /** All employees excluding ADMIN — used by Role Definition tab */
+    List<EmployeeUser> findAllByRoleNot(String role);
 }

@@ -33,4 +33,7 @@ public interface RolePermissionRepository extends JpaRepository<RolePermission, 
     /** Returns all distinct roles that have at least one permission entry. */
     @Query("SELECT DISTINCT rp.role FROM RolePermission rp")
     List<String> findDistinctRoles();
+
+    /** All permissions for a specific role — used by Role Definition permission panel. */
+    List<RolePermission> findByRole(String role);
 }

@@ -18,10 +18,18 @@
         <span class="nav-icon">📊</span> Reports
       </div>
       <!-- Create Role — ADMIN only -->
+      <!-- Hide Create Role from sidebar — accessible via Role Definition page button only -->
       <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
            [class.active]="activeTab === 'create-role'"
-           (click)="setTab('create-role')">
+           (click)="setTab('create-role')"
+           style="display: none;">
         <span class="nav-icon">👤</span> Create Role
+      </div>
+      <!-- Role Definition — ADMIN only -->
+      <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
+           [class.active]="activeTab === 'role-definition'"
+           (click)="setTab('role-definition')">
+        <span class="nav-icon">🔐</span> Role Definition
       </div>
     </div>
 
@@ -73,6 +81,7 @@
          <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
          <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
          <ng-container *ngIf="activeTab === 'create-role'">Create Role</ng-container>
+         <ng-container *ngIf="activeTab === 'role-definition'">Role Definition</ng-container>
       </div>
 
       <!-- Branch label (non-admins) or branch switcher (ADMIN) -->
@@ -395,6 +404,11 @@
 
           </form>
         </div>
+      </div>
+
+      <!-- ── Role Definition Tab (ADMIN only) ── -->
+      <div *ngIf="activeTab === 'role-definition' && currentUser?.role === 'ADMIN'">
+        <app-role-definition (tabChange)="setTab($any($event))"></app-role-definition>
       </div>
 
     </div><!-- /content -->

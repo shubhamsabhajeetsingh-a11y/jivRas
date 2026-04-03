@@ -3,9 +3,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UserProfile } from '../user-profile/user-profile';
 import { OrdersComponent } from '../orders/orders.component';
+import { RoleDefinitionComponent } from '../role-definition/role-definition.component';
 import { UserService } from '../core/services/user.service';
 import { InventoryService } from '../core/services/inventory.service';
 import { BranchService } from '../core/services/branch.service';
@@ -26,7 +27,7 @@ export interface CategoryMeta {
 @Component({
   selector: 'app-inventory-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent],
+  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent, RoleDefinitionComponent],
   templateUrl: './inventory-dashboard.html',
   styleUrl: './inventory-dashboard.css',
 })
@@ -55,7 +56,7 @@ export class InventoryDashboard implements OnInit {
 
   currentView: 'card' | 'table' = 'card';
   currentCat: string = 'all';
-  activeTab: 'inventory' | 'orders' | 'reports' | 'create-role' = 'inventory';
+  activeTab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'role-definition' = 'inventory';
 
   // ── Create Role form (ADMIN only) ─────────────────────────────────
   createRoleBranches: { id: number; name: string; city: string }[] = [];
@@ -107,6 +108,7 @@ export class InventoryDashboard implements OnInit {
     private inventoryService: InventoryService,
     private branchService: BranchService,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -114,6 +116,28 @@ export class InventoryDashboard implements OnInit {
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
+      // Detect browser refresh using router events
+      // NavigationStart with trigger 'imperative' = programmatic router.navigate()
+      // NavigationStart with trigger 'popstate'   = browser back/forward
+      // No navigation at all = browser F5 refresh (getCurrentNavigation() returns null)
+      const currentNav = this.router.getCurrentNavigation();
+      const isBrowserRefresh = currentNav === null;
+
+      this.route.queryParams.subscribe(params => {
+        if (isBrowserRefresh) {
+          // F5 refresh → always land on inventory tab, clean the URL
+          this.activeTab = 'inventory';
+          this.router.navigate(['/inventory-dashboard'], {
+            queryParams: {},
+            replaceUrl: true
+          });
+        } else {
+          // Programmatic navigation → respect the tab param
+          if (params['tab']) {
+            this.setTab(params['tab'] as any);
+          }
+        }
+      });
       this.userService.getUserProfile().subscribe({
         next: (profile) => {
           this.currentUser = profile;
@@ -248,7 +272,7 @@ export class InventoryDashboard implements OnInit {
     this.cdr.detectChanges();
   }
 
-  setTab(tab: 'inventory' | 'orders' | 'reports' | 'create-role'): void {
+  setTab(tab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'role-definition'): void {
     this.activeTab = tab;
     if (tab === 'create-role') {
       if (!this.createRoleBranchesLoaded) { this.loadCreateRoleBranches(); }
