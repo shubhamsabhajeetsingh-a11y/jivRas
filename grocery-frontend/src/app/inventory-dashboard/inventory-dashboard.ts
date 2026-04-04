@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, Inject, NgZone, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -123,6 +123,7 @@ export class InventoryDashboard implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
     private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
@@ -207,13 +208,17 @@ export class InventoryDashboard implements OnInit {
 
     request$.subscribe({
       next: (data) => {
-        this.products = data;
-        this.filterProducts();
+        this.ngZone.run(() => {
+          this.products = data;
+          this.filterProducts();
+        });
       },
       error: (err) => {
-        this.errorMessage = 'Failed to load inventory.';
-        console.error(err);
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.errorMessage = 'Failed to load inventory.';
+          console.error(err);
+          this.cdr.detectChanges();
+        });
       }
     });
   }
