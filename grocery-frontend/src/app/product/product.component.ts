@@ -34,7 +34,14 @@ export class ProductComponent implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       const role = localStorage.getItem('userRole');
-      this.isEmployee = role === 'ROLE_EMPLOYEE';
+
+      // Staff must not browse the customer-facing product page
+      if (role === 'EMPLOYEE' || role === 'ADMIN' || role === 'BRANCH_MANAGER') {
+        this.router.navigate(['/inventory-dashboard']);
+        return;
+      }
+
+      this.isEmployee = false;
       this.isLoggedIn = !!localStorage.getItem('accessToken');
       this.loadProducts();
 

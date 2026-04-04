@@ -15,14 +15,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.Arrays;
 
+/**
+ * Security configuration.
+ *
+ * NOTE: CORS is handled exclusively by CorsConfig.java which reads
+ * frontend.url from application.properties. There is NO CorsConfigurationSource
+ * bean here — defining one here would override CorsConfig and cause CORS failures.
+ */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity  // Kept for future method-level overrides; main enforcement is via DynamicAuthorizationService
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
@@ -38,13 +41,12 @@ public class SecurityConfig {
 
         http
             .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
+            .cors(Customizer.withDefaults())  // delegates to CorsConfig.java WebMvcConfigurer
             .authorizeHttpRequests(auth -> auth
                 // Preflight requests — always permitted
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // ── Public auth endpoints ───────────────────────────────────
-                // login, register, refresh, logout are all under /api/users/**
                 .requestMatchers("/api/users/login",
                                  "/api/users/register",
                                  "/api/users/refresh",
@@ -63,9 +65,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/cart/**").permitAll()
 
                 // ── Role-permissions CRUD ────────────────────────────────────
-                // The controller itself enforces ADMIN via JWT authority check.
-                // Needs to be authenticated (valid JWT) at minimum — no DB check
-                // here to avoid the circular bootstrap problem.
                 .requestMatchers("/api/permissions/**").authenticated()
 
                 // ── All other endpoints: must have a valid JWT ───────────────
@@ -97,15 +96,8 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Allow Angular frontend
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Guest-Id"));
-        configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+    // ── NO corsConfigurationSource() bean here ──────────────────────────────
+    // CorsConfig.java (WebMvcConfigurer) handles CORS globally.
+    // Having two CORS configurations causes Spring Security to use this one
+    // for the filter chain, silently ignoring CorsConfig — which broke CORS.
 }

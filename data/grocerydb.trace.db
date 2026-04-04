@@ -567,3 +567,17 @@ SELECT DISTINCT e.role FROM EmployeeUser e WHERE e.role IS NOT NULL AND e.role <
 2026-04-03 14:15:29.801799+05:30 jdbc[13]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "EMPLOYEE_USER" not found; SQL statement:
 SELECT DISTINCT e.role FROM Employee_User e WHERE e.role IS NOT NULL AND e.role <> 'ADMIN' [42102-232]
+2026-04-04 15:02:52.154057+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM ROLE_PERMISSIONS \000d\000aINSERT [*]INTO role_permissions (role, endpoint, http_method, is_allowed) VALUES\000d\000a  ('ADMIN',          '/api/reports/**', 'GET', true),\000d\000a  ('BRANCH_MANAGER', '/api/reports/**', 'GET', true),\000d\000a  ('EMPLOYEE',       '/api/reports/**', 'GET', false)"; SQL statement:
+SELECT * FROM ROLE_PERMISSIONS 
+INSERT INTO role_permissions (role, endpoint, http_method, is_allowed) VALUES
+  ('ADMIN',          '/api/reports/**', 'GET', true),
+  ('BRANCH_MANAGER', '/api/reports/**', 'GET', true),
+  ('EMPLOYEE',       '/api/reports/**', 'GET', false) [42000-232]
+2026-04-04 15:03:46.351593+05:30 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM ROLE_PERMISSIONS \000d\000aINSERT [*]INTO role_permissions (role, endpoint, http_method, is_allowed) VALUES\000d\000a  ('ADMIN',          '/api/reports/**', 'GET', true),\000d\000a  ('BRANCH_MANAGER', '/api/reports/**', 'GET', true),\000d\000a  ('EMPLOYEE',       '/api/reports/**', 'GET', false)"; SQL statement:
+SELECT * FROM ROLE_PERMISSIONS 
+INSERT INTO role_permissions (role, endpoint, http_method, is_allowed) VALUES
+  ('ADMIN',          '/api/reports/**', 'GET', true),
+  ('BRANCH_MANAGER', '/api/reports/**', 'GET', true),
+  ('EMPLOYEE',       '/api/reports/**', 'GET', false) [42000-232]

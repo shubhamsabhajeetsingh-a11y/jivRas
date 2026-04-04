@@ -46,42 +46,44 @@ public class DataSeeder {
         permissions.add(perm("ADMIN", "/**", "*", true));
 
         // ── BRANCH_MANAGER ─────────────────────────────────────────────────────
-        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**", "GET",    true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**", "POST",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**", "PUT",    true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/branches/{id}", "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/branches/active", "GET", true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/products/**", "GET",     true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/categories/**", "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/orders/admin/**", "GET", true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/users/me", "GET",        true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/users/profile", "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**",      "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**",      "POST",  true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**",      "PUT",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/branches/{id}",     "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/branches/active",   "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/products/**",       "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/categories/**",     "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/orders/admin/**",   "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/orders/**",         "PATCH", true));  // ← status update
+        permissions.add(perm("BRANCH_MANAGER", "/api/users/me",          "GET",   true));
+        permissions.add(perm("BRANCH_MANAGER", "/api/users/profile",     "GET",   true));
 
         // ── EMPLOYEE ────────────────────────────────────────────────────────────
-        permissions.add(perm("EMPLOYEE", "/api/inventory/my-branch",   "GET",  true));
-        permissions.add(perm("EMPLOYEE", "/api/inventory/low-stock",   "GET",  true));
-        permissions.add(perm("EMPLOYEE", "/api/inventory/stock",        "POST", true));
-        permissions.add(perm("EMPLOYEE", "/api/branches/active",       "GET",  true));
-        permissions.add(perm("EMPLOYEE", "/api/products/**",            "GET",  true));
-        permissions.add(perm("EMPLOYEE", "/api/products/**",            "POST", true));
-        permissions.add(perm("EMPLOYEE", "/api/products/**",            "PUT",  true));
-        permissions.add(perm("EMPLOYEE", "/api/categories/**",          "GET",  true));
-        permissions.add(perm("EMPLOYEE", "/api/orders/admin/**",        "GET",  true));
-        permissions.add(perm("EMPLOYEE", "/api/users/me",               "GET",  true));
-        permissions.add(perm("EMPLOYEE", "/api/users/profile",          "GET",  true));
+        permissions.add(perm("EMPLOYEE", "/api/inventory/my-branch",  "GET",   true));
+        permissions.add(perm("EMPLOYEE", "/api/inventory/low-stock",  "GET",   true));
+        permissions.add(perm("EMPLOYEE", "/api/inventory/stock",      "POST",  true));
+        permissions.add(perm("EMPLOYEE", "/api/branches/active",      "GET",   true));
+        permissions.add(perm("EMPLOYEE", "/api/products/**",          "GET",   true));
+        permissions.add(perm("EMPLOYEE", "/api/products/**",          "POST",  true));
+        permissions.add(perm("EMPLOYEE", "/api/products/**",          "PUT",   true));
+        permissions.add(perm("EMPLOYEE", "/api/categories/**",        "GET",   true));
+        permissions.add(perm("EMPLOYEE", "/api/orders/admin/**",      "GET",   true));
+        permissions.add(perm("EMPLOYEE", "/api/orders/**",            "PATCH", true));  // ← status update
+        permissions.add(perm("EMPLOYEE", "/api/users/me",             "GET",   true));
+        permissions.add(perm("EMPLOYEE", "/api/users/profile",        "GET",   true));
 
         // ── CUSTOMER ────────────────────────────────────────────────────────────
-        permissions.add(perm("CUSTOMER", "/api/products/**",   "GET",  true));
-        permissions.add(perm("CUSTOMER", "/api/categories/**", "GET",  true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",       "GET",  true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",       "POST", true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",       "PUT",  true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",       "DELETE", true));
-        permissions.add(perm("CUSTOMER", "/api/orders/checkout", "POST", true));
-        permissions.add(perm("CUSTOMER", "/api/orders/{id}",    "GET",  true));
-        permissions.add(perm("CUSTOMER", "/api/users/me",       "GET",  true));
-        permissions.add(perm("CUSTOMER", "/api/users/profile",  "GET",  true));
-        permissions.add(perm("CUSTOMER", "/api/locations/**",   "GET",  true));
+        permissions.add(perm("CUSTOMER", "/api/products/**",      "GET",    true));
+        permissions.add(perm("CUSTOMER", "/api/categories/**",    "GET",    true));
+        permissions.add(perm("CUSTOMER", "/api/cart/**",          "GET",    true));
+        permissions.add(perm("CUSTOMER", "/api/cart/**",          "POST",   true));
+        permissions.add(perm("CUSTOMER", "/api/cart/**",          "PUT",    true));
+        permissions.add(perm("CUSTOMER", "/api/cart/**",          "DELETE", true));
+        permissions.add(perm("CUSTOMER", "/api/orders/checkout",  "POST",   true));
+        permissions.add(perm("CUSTOMER", "/api/orders/{id}",      "GET",    true));
+        permissions.add(perm("CUSTOMER", "/api/users/me",         "GET",    true));
+        permissions.add(perm("CUSTOMER", "/api/users/profile",    "GET",    true));
+        permissions.add(perm("CUSTOMER", "/api/locations/**",     "GET",    true));
 
         rolePermissionRepository.saveAll(permissions);
         System.out.println("[DataSeeder] Seeded " + permissions.size() + " permission entries.");

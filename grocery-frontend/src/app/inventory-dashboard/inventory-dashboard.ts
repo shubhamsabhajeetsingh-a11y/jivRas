@@ -7,6 +7,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UserProfile } from '../user-profile/user-profile';
 import { OrdersComponent } from '../orders/orders.component';
 import { RoleDefinitionComponent } from '../role-definition/role-definition.component';
+import { ReportsComponent } from '../reports/reports.component';
 import { UserService } from '../core/services/user.service';
 import { InventoryService } from '../core/services/inventory.service';
 import { BranchService } from '../core/services/branch.service';
@@ -27,7 +28,7 @@ export interface CategoryMeta {
 @Component({
   selector: 'app-inventory-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent, RoleDefinitionComponent],
+  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent, RoleDefinitionComponent, ReportsComponent],
   templateUrl: './inventory-dashboard.html',
   styleUrl: './inventory-dashboard.css',
 })
@@ -56,7 +57,7 @@ export class InventoryDashboard implements OnInit {
 
   currentView: 'card' | 'table' = 'card';
   currentCat: string = 'all';
-  activeTab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'role-definition' = 'inventory';
+  activeTab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'create-branch' | 'role-definition' = 'inventory';
 
   // ── Create Role form (ADMIN only) ─────────────────────────────────
   createRoleBranches: { id: number; name: string; city: string }[] = [];
@@ -77,6 +78,18 @@ export class InventoryDashboard implements OnInit {
   createRoleBranchesLoaded = false;
   createRoleRoles: string[] = [];
   createRoleRolesLoaded = false;
+
+  // ── Create Branch form (ADMIN only) ──────────────────────────────
+  createBranchForm = {
+    name: '',
+    address: '',
+    pincode: '',
+    city: '',
+    managerUsername: ''
+  };
+  createBranchSuccess = '';
+  createBranchError   = '';
+  createBranchSubmitting = false;
 
   readonly EMOJIS: Record<string, string> = {
     'Dry Fruits': '🌰',
@@ -272,7 +285,7 @@ export class InventoryDashboard implements OnInit {
     this.cdr.detectChanges();
   }
 
-  setTab(tab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'role-definition'): void {
+  setTab(tab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'create-branch' | 'role-definition'): void {
     this.activeTab = tab;
     if (tab === 'create-role') {
       if (!this.createRoleBranchesLoaded) { this.loadCreateRoleBranches(); }
@@ -394,6 +407,54 @@ export class InventoryDashboard implements OnInit {
     };
     this.createRoleError  = '';
     this.createRoleSuccess = '';
+  }
+
+  // ── Create Branch helpers ──────────────────────────────────────────
+
+  submitCreateBranch(): void {
+    this.createBranchError   = '';
+    this.createBranchSuccess = '';
+
+    const f = this.createBranchForm;
+    if (!f.name.trim() || !f.address.trim() || !f.pincode.trim() || !f.city.trim()) {
+      this.createBranchError = 'Name, address, pincode, and city are required.';
+      return;
+    }
+
+    this.createBranchSubmitting = true;
+    const body = {
+      name:            f.name.trim(),
+      address:         f.address.trim(),
+      pincode:         f.pincode.trim(),
+      city:            f.city.trim(),
+      managerUsername: f.managerUsername.trim() || null
+    };
+
+    this.http
+      .post<any>(`${environment.apiUrl}/api/branches`, body, { headers: this.getAuthHeaders() })
+      .subscribe({
+        next: () => {
+          this.createBranchSuccess   = 'Branch created successfully!';
+          this.createBranchSubmitting = false;
+          this.createBranchForm = { name: '', address: '', pincode: '', city: '', managerUsername: '' };
+          this.cdr.detectChanges();
+          // Refresh branch list used elsewhere in dashboard
+          this.loadAllBranches();
+          setTimeout(() => { this.createBranchSuccess = ''; this.cdr.detectChanges(); }, 4000);
+        },
+        error: (err) => {
+          const msg = err?.error?.message || err?.error || 'Failed to create branch.';
+          this.createBranchError   = typeof msg === 'string' ? msg : JSON.stringify(msg);
+          this.createBranchSubmitting = false;
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  resetCreateBranchForm(): void {
+    this.createBranchForm = { name: '', address: '', pincode: '', city: '', managerUsername: '' };
+    this.createBranchError   = '';
+    this.createBranchSuccess = '';
   }
 
   filterCat(cat: string): void {

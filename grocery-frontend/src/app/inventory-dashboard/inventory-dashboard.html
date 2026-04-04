@@ -25,6 +25,12 @@
            style="display: none;">
         <span class="nav-icon">👤</span> Create Role
       </div>
+      <!-- Create Branch — ADMIN only -->
+      <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
+           [class.active]="activeTab === 'create-branch'"
+           (click)="setTab('create-branch')">
+        <span class="nav-icon">🏪</span> Create Branch
+      </div>
       <!-- Role Definition — ADMIN only -->
       <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
            [class.active]="activeTab === 'role-definition'"
@@ -81,6 +87,7 @@
          <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
          <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
          <ng-container *ngIf="activeTab === 'create-role'">Create Role</ng-container>
+         <ng-container *ngIf="activeTab === 'create-branch'">Create Branch</ng-container>
          <ng-container *ngIf="activeTab === 'role-definition'">Role Definition</ng-container>
       </div>
 
@@ -278,11 +285,8 @@
       <!-- ── Orders Tab ── -->
       <app-orders [hidden]="activeTab !== 'orders'"></app-orders>
 
-      <!-- ── Reports Tab Placeholder ── -->
-      <div *ngIf="activeTab === 'reports'" class="placeholder-card" style="background: var(--surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border); text-align: center; margin-top: 20px;">
-        <h2 style="font-family: 'Syne', sans-serif; color: var(--accent); margin-bottom: 12px;">Reports Module</h2>
-        <p style="color: var(--text-muted); line-height: 1.5;">Reports module coming soon. API not yet available.</p>
-      </div>
+      <!-- ── Reports Tab ── -->
+      <app-reports [hidden]="activeTab !== 'reports'"></app-reports>
 
       <!-- ── Create Role Tab (ADMIN only) ── -->
       <div *ngIf="activeTab === 'create-role' && currentUser?.role === 'ADMIN'" class="cr-wrapper">
@@ -397,6 +401,73 @@
               <button type="submit" class="cr-btn-submit" [disabled]="createRoleSubmitting">
                 <span *ngIf="!createRoleSubmitting">Create Account</span>
                 <span *ngIf="createRoleSubmitting" class="cr-spinner-row">
+                  <span class="cr-spinner"></span> Creating…
+                </span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- ── Create Branch Tab (ADMIN only) ── -->
+      <div *ngIf="activeTab === 'create-branch' && currentUser?.role === 'ADMIN'" class="cr-wrapper">
+        <div class="cr-card">
+          <div class="cr-header">
+            <div class="cr-icon">🏪</div>
+            <div>
+              <h2 class="cr-title">Create Branch</h2>
+              <p class="cr-subtitle">Register a new store branch and optionally assign a Branch Manager.</p>
+            </div>
+          </div>
+
+          <!-- Alerts -->
+          <div *ngIf="createBranchError"   class="cr-alert cr-alert-error">⚠️ {{ createBranchError }}</div>
+          <div *ngIf="createBranchSuccess" class="cr-alert cr-alert-success">✅ {{ createBranchSuccess }}</div>
+
+          <form (ngSubmit)="submitCreateBranch()" #cbForm="ngForm" autocomplete="off">
+
+            <!-- Row 1: Branch name + City -->
+            <div class="cr-row">
+              <div class="cr-field">
+                <label class="cr-label">Branch Name</label>
+                <input class="cr-input" type="text" [(ngModel)]="createBranchForm.name"
+                       name="branchName" placeholder="e.g. Virar Store" required>
+              </div>
+              <div class="cr-field">
+                <label class="cr-label">City</label>
+                <input class="cr-input" type="text" [(ngModel)]="createBranchForm.city"
+                       name="city" placeholder="e.g. Virar" required>
+              </div>
+            </div>
+
+            <!-- Address -->
+            <div class="cr-field cr-field-full">
+              <label class="cr-label">Address</label>
+              <input class="cr-input" type="text" [(ngModel)]="createBranchForm.address"
+                     name="address" placeholder="Street, Area, State" required>
+            </div>
+
+            <!-- Row 2: Pincode + Manager Username -->
+            <div class="cr-row">
+              <div class="cr-field">
+                <label class="cr-label">Pincode</label>
+                <input class="cr-input" type="text" [(ngModel)]="createBranchForm.pincode"
+                       name="pincode" placeholder="e.g. 401303" required>
+              </div>
+              <div class="cr-field">
+                <label class="cr-label">Manager Username <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+                <input class="cr-input" type="text" [(ngModel)]="createBranchForm.managerUsername"
+                       name="managerUsername" placeholder="e.g. priya_sharma">
+              </div>
+            </div>
+
+            <!-- Footer actions -->
+            <div class="cr-actions">
+              <button type="button" class="cr-btn-reset" (click)="resetCreateBranchForm()">Clear</button>
+              <button type="submit" class="cr-btn-submit" [disabled]="createBranchSubmitting">
+                <span *ngIf="!createBranchSubmitting">Create Branch</span>
+                <span *ngIf="createBranchSubmitting" class="cr-spinner-row">
                   <span class="cr-spinner"></span> Creating…
                 </span>
               </button>

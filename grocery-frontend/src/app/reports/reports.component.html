@@ -1,0 +1,213 @@
+<div class="reports-wrap">
+
+  <!-- ── Loading / Error ────────────────────────────────────────── -->
+  <div *ngIf="loading" class="state-banner state-loading">Loading report data…</div>
+  <div *ngIf="error && !loading" class="state-banner state-error">{{ error }}</div>
+
+  <!-- ── Filter Bar ─────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label for="fromDate">From</label>
+      <input type="date" id="fromDate" [(ngModel)]="fromDate" class="date-input" />
+    </div>
+    <div class="filter-group">
+      <label for="toDate">To</label>
+      <input type="date" id="toDate" [(ngModel)]="toDate" class="date-input" />
+    </div>
+    <button class="apply-btn" (click)="onFilterApply()">Apply</button>
+    <div class="quick-ranges">
+      <button class="range-btn" (click)="setQuickRange(7)">7D</button>
+      <button class="range-btn" (click)="setQuickRange(30)">30D</button>
+      <button class="range-btn" (click)="setQuickRange(90)">90D</button>
+    </div>
+    <button class="export-btn" (click)="downloadExcel()" [disabled]="exportingExcel">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      {{ exportingExcel ? 'Exporting…' : 'Export Excel' }}
+    </button>
+  </div>
+
+  <!-- ── Section 1: KPI Cards ───────────────────────────────────── -->
+  <div class="kpi-grid" *ngIf="summary">
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-green">₹</div>
+      <div class="kpi-body">
+        <div class="kpi-label">Revenue Today</div>
+        <div class="kpi-value">{{ formatCurrency(summary.totalRevenueToday) }}</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-blue">🧾</div>
+      <div class="kpi-body">
+        <div class="kpi-label">Orders Today</div>
+        <div class="kpi-value">{{ summary.totalOrdersToday }}</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-orange">🔥</div>
+      <div class="kpi-body">
+        <div class="kpi-label">Top Selling Item</div>
+        <div class="kpi-value kpi-value-sm">{{ summary.topSellingItem }}</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-purple">📦</div>
+      <div class="kpi-body">
+        <div class="kpi-label">Top Category</div>
+        <div class="kpi-value kpi-value-sm">{{ summary.topCategory }}</div>
+      </div>
+    </div>
+    <div class="kpi-card" [class.kpi-alert]="summary.lowStockAlertsCount > 0">
+      <div class="kpi-icon kpi-red">⚠️</div>
+      <div class="kpi-body">
+        <div class="kpi-label">Low Stock Alerts</div>
+        <div class="kpi-value">{{ summary.lowStockAlertsCount }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 2: Charts ──────────────────────────────────────── -->
+  <div class="charts-grid">
+
+    <!-- Sales Trend -->
+    <div class="chart-card chart-wide">
+      <div class="chart-title">Sales Trend</div>
+      <div class="chart-subtitle">Revenue over selected date range</div>
+      <div class="chart-body">
+        <canvas #salesTrendCanvas></canvas>
+      </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="chart-card">
+      <div class="chart-title">Top Products</div>
+      <div class="chart-subtitle">Most sold items by kg</div>
+      <div class="chart-body">
+        <canvas #topProductsCanvas></canvas>
+      </div>
+    </div>
+
+    <!-- Category Pie -->
+    <div class="chart-card">
+      <div class="chart-title">Category Breakdown</div>
+      <div class="chart-subtitle">Revenue share by category</div>
+      <div class="chart-body">
+        <canvas #categoryPieCanvas></canvas>
+      </div>
+    </div>
+
+    <!-- Branch Comparison -->
+    <div class="chart-card chart-wide">
+      <div class="chart-title">Branch Stock Comparison</div>
+      <div class="chart-subtitle">Total stock vs. low stock items per branch</div>
+      <div class="chart-body">
+        <canvas #branchCompareCanvas></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Section 3: Branch Stats Table ─────────────────────────── -->
+  <div class="section-block" *ngIf="branchComparisons.length > 0">
+    <div class="section-head">
+      <span class="section-title">Branch Inventory Summary</span>
+    </div>
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Branch</th>
+            <th>Total Products</th>
+            <th>Total Stock (kg)</th>
+            <th>Low Stock Items</th>
+            <th>Low Stock %</th>
+            <th>Health</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let b of branchComparisons">
+            <td class="branch-name-cell">{{ b.branchName }}</td>
+            <td>{{ b.totalProducts }}</td>
+            <td>{{ b.totalStockKg | number:'1.1-1' }} kg</td>
+            <td>{{ b.lowStockCount }}</td>
+            <td>{{ b.lowStockPercentage }}%</td>
+            <td>
+              <span class="health-badge"
+                [class.health-ok]="b.lowStockPercentage < 20"
+                [class.health-warn]="b.lowStockPercentage >= 20 && b.lowStockPercentage < 50"
+                [class.health-bad]="b.lowStockPercentage >= 50">
+                {{ b.lowStockPercentage < 20 ? 'Good' : b.lowStockPercentage < 50 ? 'Watch' : 'Critical' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Section 4: Stock Alerts Table ─────────────────────────── -->
+  <div class="section-block">
+    <div class="section-head">
+      <span class="section-title">Stock Depletion Alerts</span>
+      <div class="alert-controls">
+        <input type="text" [(ngModel)]="alertSearchTerm" placeholder="Search product or branch…"
+               class="alert-search" />
+        <div class="severity-tabs">
+          <button class="sev-btn" [class.active]="alertFilter === 'ALL'"
+                  (click)="alertFilter = 'ALL'">All</button>
+          <button class="sev-btn sev-critical" [class.active]="alertFilter === 'CRITICAL'"
+                  (click)="alertFilter = 'CRITICAL'">Critical</button>
+          <button class="sev-btn sev-warning" [class.active]="alertFilter === 'WARNING'"
+                  (click)="alertFilter = 'WARNING'">Warning</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Branch</th>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Stock Left (kg)</th>
+            <th>Threshold (kg)</th>
+            <th>Severity</th>
+            <th>Est. Days Left</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="filteredAlerts.length === 0">
+            <td colspan="7" class="empty-row">No stock alerts matching filters.</td>
+          </tr>
+          <tr *ngFor="let a of filteredAlerts" [class.row-critical]="a.severity === 'CRITICAL'">
+            <td>{{ a.branchName }}</td>
+            <td class="product-cell">{{ a.productName }}</td>
+            <td>{{ a.categoryName }}</td>
+            <td>{{ a.availableStockKg | number:'1.2-2' }}</td>
+            <td>{{ a.lowStockThreshold | number:'1.1-1' }}</td>
+            <td>
+              <span class="sev-badge" [class.badge-critical]="a.severity === 'CRITICAL'"
+                    [class.badge-warning]="a.severity === 'WARNING'">
+                {{ a.severity }}
+              </span>
+            </td>
+            <td>
+              <span *ngIf="a.projectedDaysLeft !== null; else noDays">
+                <span [class.days-critical]="(a.projectedDaysLeft ?? 99) < 3"
+                      [class.days-warn]="(a.projectedDaysLeft ?? 99) >= 3 && (a.projectedDaysLeft ?? 99) < 7">
+                  ~{{ a.projectedDaysLeft | number:'1.0-0' }}d
+                </span>
+              </span>
+              <ng-template #noDays><span class="muted">—</span></ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.service.DynamicAuthorizationService;
+import com.jivRas.groceries.service.RsaKeyService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -54,13 +55,15 @@ public class UserController {
     private final RefreshTokenRepository refreshTokenRepository;
     private final DynamicAuthorizationService dynamicAuthorizationService;
     private final BranchRepository branchRepository;
+    private final RsaKeyService rsaKeyService;
 
     public UserController(CustomerRepository customerRepository, EmployeeUserRepository employeeUserRepository,
             PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
             KafkaEventProducer kafkaEventProducer, JwtService jwtService,
             DaoAuthenticationProvider authenticationProvider, RefreshTokenRepository refreshTokenRepository,
             DynamicAuthorizationService dynamicAuthorizationService,
-            BranchRepository branchRepository) {
+            BranchRepository branchRepository,
+            RsaKeyService rsaKeyService) {
         this.customerRepository = customerRepository;
         this.employeeUserRepository = employeeUserRepository;
         this.passwordEncoder = passwordEncoder;
@@ -70,6 +73,7 @@ public class UserController {
         this.refreshTokenRepository = refreshTokenRepository;
         this.dynamicAuthorizationService = dynamicAuthorizationService;
         this.branchRepository = branchRepository;
+        this.rsaKeyService = rsaKeyService;
     }
 
     private boolean usernameExists(String username) {
@@ -81,7 +85,14 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
 
         String username = credentials.get("username");
-        String password = credentials.get("password");
+        String encryptedPassword = credentials.get("password");
+
+        String password;
+        try {
+            password = rsaKeyService.decrypt(encryptedPassword);
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body("Invalid request: password decryption failed");
+        }
 
         try {
             Authentication authentication = authenticationManager.authenticate(

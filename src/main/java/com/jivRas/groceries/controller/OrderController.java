@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.jivRas.groceries.dto.CheckoutRequest;
 import com.jivRas.groceries.dto.OrderResponse;
 import com.jivRas.groceries.dto.AdminOrderResponse;
+import com.jivRas.groceries.entity.Order;
+import com.jivRas.groceries.exception.ResourceNotFoundException;
+import com.jivRas.groceries.repository.OrderRepository;
 import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.OrderService;
 
@@ -34,6 +38,7 @@ import java.util.Map;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderRepository orderRepository;
     private final DynamicAuthorizationService dynamicAuthorizationService;
 
     /**
@@ -48,7 +53,6 @@ public class OrderController {
             HttpServletRequest httpRequest,
             Authentication authentication) {
 
-        // Checkout is allowed for any authenticated user or guest — no DB permission check needed
         String userId = resolveUserId(guestId, authentication);
         return ResponseEntity.ok(orderService.checkout(userId, request));
     }
@@ -106,11 +110,43 @@ public class OrderController {
         return ResponseEntity.ok(grouped);
     }
 
+    /**
+     * PATCH /api/orders/{id}/status
+     * Update order status — ADMIN, EMPLOYEE, and BRANCH_MANAGER (per DB permissions).
+     * Called by the Orders dashboard status dropdown.
+     */
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
+        String newStatus = body.get("status");
+        if (newStatus == null || newStatus.isBlank()) {
+            return ResponseEntity.badRequest().body("status field is required");
+        }
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
+
+        order.setOrderStatus(newStatus);
+        orderRepository.save(order);
+
+        return ResponseEntity.ok(Map.of(
+                "orderId", id,
+                "newStatus", newStatus,
+                "message", "Order status updated successfully"
+        ));
+    }
+
     // ──────────────────────────── Helpers ──────────────────────────────────────
 
-    /**
-     * Resolve the userId from JWT (if logged in) or from the X-Guest-Id header.
-     */
     private String resolveUserId(String guestId, Authentication auth) {
         if (auth != null && auth.isAuthenticated()
                 && !"anonymousUser".equals(auth.getPrincipal())) {
@@ -119,7 +155,6 @@ public class OrderController {
         if (guestId != null && !guestId.isBlank()) {
             return "guest_" + guestId;
         }
-        // Fall back to SecurityContextHolder for compatibility
         Authentication contextAuth = SecurityContextHolder.getContext().getAuthentication();
         if (contextAuth != null && contextAuth.isAuthenticated()
                 && !"anonymousUser".equals(contextAuth.getPrincipal())) {

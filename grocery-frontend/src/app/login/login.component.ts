@@ -38,33 +38,56 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.loginForm.valid) {
-      const loginData = this.loginForm.value;
+    if (!this.loginForm.valid) return;
 
-      this.http.post<any>(`${environment.apiUrl}/api/users/login`, loginData)
-        .subscribe({
-          next: (response: any) => {
-            console.log('Login successful:', response);
-            localStorage.setItem('accessToken', response.accessToken);
-            localStorage.setItem('refreshToken', response.refreshToken);
+    const { username, password } = this.loginForm.value;
 
-            // Store the role from backend (e.g. "ROLE_EMPLOYEE", "ROLE_CUSTOMER")
-            localStorage.setItem('userRole', response.role);
+    this.encryptAesGcm(password).then(encryptedPassword => {
+      this.http.post<any>(
+        `${environment.apiUrl}/api/users/login`,
+        { username, password: encryptedPassword }
+      ).subscribe({
+        next: (response: any) => {
+          localStorage.setItem('accessToken', response.accessToken);
+          localStorage.setItem('refreshToken', response.refreshToken);
+          localStorage.setItem('userRole', response.role);
+          localStorage.removeItem('guestId');
 
-            // Remove guestId once logged in — cart will use username instead
-            localStorage.removeItem('guestId');
-
-            if (response.role === 'EMPLOYEE' || response.role === 'ADMIN' || response.role === 'BRANCH_MANAGER') {
-              this.router.navigate(['/inventory-dashboard']);
-            } else {
-              this.router.navigate(['/products']);
-            }
-          },
-          error: (err) => {
-            console.error('Login failed:', err);
-            this.errorMessage = 'Invalid username or password.';
+          if (response.role === 'EMPLOYEE' || response.role === 'ADMIN' || response.role === 'BRANCH_MANAGER') {
+            this.router.navigate(['/inventory-dashboard']);
+          } else {
+            this.router.navigate(['/products']);
           }
-        });
-    }
+        },
+        error: (err) => {
+          console.error('Login failed:', err);
+          this.errorMessage = 'Invalid username or password.';
+        }
+      });
+    }).catch(() => {
+      this.errorMessage = 'Encryption error. Please refresh and try again.';
+    });
+  }
+
+  /**
+   * AES-256-GCM encryption using the Web Crypto API.
+   * The 32-byte key matches the HEX_KEY hardcoded in RsaKeyService.java.
+   * Returns "<base64-iv>:<base64-ciphertext>" — the format Java expects.
+   */
+  private async encryptAesGcm(plaintext: string): Promise<string> {
+    const HEX_KEY = '6a8f3b2e9c1d5f7a0e4b8c2d6f9a1e3b7d5c8f2a4e6b0d3f5a7c9e1b3d7f9ac4';
+
+    const keyBytes = new Uint8Array(HEX_KEY.match(/.{2}/g)!.map(b => parseInt(b, 16)));
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']
+    );
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(plaintext);
+    const cipherBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, encoded);
+
+    const ivB64   = btoa(String.fromCharCode(...iv));
+    const ctB64   = btoa(String.fromCharCode(...new Uint8Array(cipherBuffer)));
+    return `${ivB64}:${ctB64}`;
   }
 }
