@@ -2,13 +2,16 @@ package com.jivRas.groceries.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.jivRas.groceries.dto.BranchInventoryRequest;
 import com.jivRas.groceries.dto.BranchInventoryResponse;
+import com.jivRas.groceries.dto.BulkStockUpdateRequest;
 import com.jivRas.groceries.dto.StockTransferRequest;
 import com.jivRas.groceries.entity.Branch;
 import com.jivRas.groceries.entity.BranchInventory;
@@ -174,10 +177,10 @@ public class BranchInventoryService {
      * This is an ATOMIC operation — both branches update together.
      * If any step fails, the entire transaction rolls back.
      *
-     * @param request — fromBranchId, toBranchId, productId, quantityKg
+     * @param request — fromBranchId, toBranchId, productId, quantity
      */
     @Transactional  // Ensures both deduct + add happen atomically
-    public void transferStock(StockTransferRequest request) {
+    public Map<String, Object> transferStock(StockTransferRequest request) {
 
         // Step 1: Get stock entry at source branch (from where stock is going)
         BranchInventory fromInventory = branchInventoryRepository
@@ -186,28 +189,65 @@ public class BranchInventoryService {
                         "Product not found in source branch: " + request.getFromBranchId()));
 
         // Step 2: Check if source branch has enough stock
-        if (fromInventory.getAvailableStockKg() < request.getQuantityKg()) {
-            throw new RuntimeException("Insufficient stock at source branch. Available: "
-                    + fromInventory.getAvailableStockKg() + " kg");
+        if (fromInventory.getAvailableStockKg() < request.getQuantity()) {
+            throw new RuntimeException("Insufficient stock for transfer");
         }
 
         // Step 3: Get stock entry at destination branch (where stock is going)
         BranchInventory toInventory = branchInventoryRepository
                 .findByBranch_IdAndProduct_Id(request.getToBranchId(), request.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Product not found in destination branch. Add product to branch first."));
+                .orElseGet(() -> {
+                    BranchInventory newInv = new BranchInventory();
+                    Branch destBranch = branchRepository.findById(request.getToBranchId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Destination branch not found"));
+                    Product product = productRepository.findById(request.getProductId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+                    newInv.setBranch(destBranch);
+                    newInv.setProduct(product);
+                    newInv.setAvailableStockKg(0.0);
+                    newInv.setLowStockThreshold(5.0); // default
+                    return newInv;
+                });
 
         // Step 4: Deduct from source branch
-        fromInventory.setAvailableStockKg(fromInventory.getAvailableStockKg() - request.getQuantityKg());
+        fromInventory.setAvailableStockKg(fromInventory.getAvailableStockKg() - request.getQuantity());
         fromInventory.setLastUpdated(LocalDateTime.now());
 
         // Step 5: Add to destination branch
-        toInventory.setAvailableStockKg(toInventory.getAvailableStockKg() + request.getQuantityKg());
+        toInventory.setAvailableStockKg(toInventory.getAvailableStockKg() + request.getQuantity());
         toInventory.setLastUpdated(LocalDateTime.now());
 
         // Step 6: Save both — @Transactional ensures both save or neither saves
         branchInventoryRepository.save(fromInventory);
         branchInventoryRepository.save(toInventory);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("fromBranchId", request.getFromBranchId());
+        response.put("toBranchId", request.getToBranchId());
+        response.put("productId", request.getProductId());
+        response.put("quantityTransferred", request.getQuantity());
+        return response;
+    }
+
+    /**
+     * BULK UPDATE stock across multiple entries.
+     */
+    @Transactional
+    public List<BranchInventoryResponse> bulkUpdateStock(BulkStockUpdateRequest request) {
+        List<BranchInventoryResponse> updatedList = new ArrayList<>();
+        
+        for (BulkStockUpdateRequest.StockUpdateItem item : request.getUpdates()) {
+            BranchInventory inventory = branchInventoryRepository.findById(item.getInventoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with ID: " + item.getInventoryId()));
+            
+            inventory.setAvailableStockKg(item.getNewQuantity());
+            inventory.setLastUpdated(LocalDateTime.now());
+            
+            BranchInventory saved = branchInventoryRepository.save(inventory);
+            updatedList.add(mapToResponse(saved));
+        }
+        
+        return updatedList;
     }
 
     /**

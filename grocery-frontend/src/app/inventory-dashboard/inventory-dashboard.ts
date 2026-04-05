@@ -11,6 +11,7 @@ import { ReportsComponent } from '../reports/reports.component';
 import { UserService } from '../core/services/user.service';
 import { InventoryService } from '../core/services/inventory.service';
 import { BranchService } from '../core/services/branch.service';
+import { SearchService } from '../core/services/search.service';
 import {
   UserProfile as UserProfileModel,
   Branch,
@@ -42,9 +43,11 @@ export class InventoryDashboard implements OnInit {
   selectedBranchId?: number;
 
   // ── Inventory data ────────────────────────────────────────────────
+  isLoading: boolean = false;
   products: BranchInventoryResponse[] = [];
+
   filteredProducts: BranchInventoryResponse[] = [];
-  searchTerm: string = '';
+  searchQuery: string = '';
   errorMessage: string = '';
   successMessage: string = '';
 
@@ -58,6 +61,26 @@ export class InventoryDashboard implements OnInit {
   currentView: 'card' | 'table' = 'card';
   currentCat: string = 'all';
   activeTab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'create-branch' | 'role-definition' = 'inventory';
+
+  // ── Shared Search ──────────────────────────────────────────────────
+  searchPlaceholders: Record<string, string> = {
+    'inventory': 'Search inventory by name...',
+    'orders':    'Search by customer name, phone, order ID...',
+    'reports':   'Search reports...',
+    'role-definition': 'Search employees...',
+  };
+
+  get isAdminUser(): boolean {
+    return this.currentUser?.role === 'ADMIN' || this.currentUser?.role === 'SUPER_ADMIN';
+  }
+
+  get searchPlaceholder(): string {
+    return this.searchPlaceholders[this.activeTab] || 'Search...';
+  }
+
+  onSearch() {
+    this.searchService.setQuery(this.searchQuery, this.activeTab);
+  }
 
   // ── Create Role form (ADMIN only) ─────────────────────────────────
   createRoleBranches: { id: number; name: string; city: string }[] = [];
@@ -115,6 +138,20 @@ export class InventoryDashboard implements OnInit {
   // Custom modal state
   showDeleteModal: boolean = false;
   deleteTargetId: number | null = null;
+  
+  // Bulk Edit
+  isBulkEditMode = false;
+  bulkEdits: { [inventoryId: number]: number } = {};
+
+  // Transfer Model
+  showTransferModal = false;
+  transferError: string = '';
+  transferForm = { productId: null as number|null, productName: '', fromBranchId: null as number|null, toBranchId: null as number|null, quantity: null as number|null, maxQuantity: 0 };
+
+  // Toast
+  toastMessage: string = '';
+  toastType: 'success' | 'error' = 'success';
+  showToastFlag: boolean = false;
 
   constructor(
     private userService: UserService,
@@ -125,10 +162,19 @@ export class InventoryDashboard implements OnInit {
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
     private http: HttpClient,
+    private searchService: SearchService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
+    // Listen to global search changes
+    this.searchService.query$.subscribe(query => {
+      this.searchQuery = query; // keep search bar text in sync with service state
+      if (this.activeTab === 'inventory') {
+        this.filterProducts();
+      }
+    });
+
     if (isPlatformBrowser(this.platformId)) {
       // Detect browser refresh using router events
       // NavigationStart with trigger 'imperative' = programmatic router.navigate()
@@ -155,13 +201,13 @@ export class InventoryDashboard implements OnInit {
       this.userService.getUserProfile().subscribe({
         next: (profile) => {
           this.currentUser = profile;
-          // ADMIN: always start with no selected branch — let loadAllBranches() pick first branch
+          // ADMIN/SUPER_ADMIN: always start with no selected branch — let loadAllBranches() pick first branch
           // EMPLOYEE/BRANCH_MANAGER: use their assigned branchId from profile
-          this.selectedBranchId = (profile.role === 'ADMIN')
+          this.selectedBranchId = this.isAdminUser
             ? undefined
             : (profile.branchId > 0 ? profile.branchId : undefined);
 
-          if (this.currentUser.role === 'ADMIN') {
+          if (this.isAdminUser) {
             // loadAllBranches() will set selectedBranchId then call loadInventory()
             // Do NOT call loadInventory() here — selectedBranchId is still undefined
             this.loadAllBranches();
@@ -200,9 +246,9 @@ export class InventoryDashboard implements OnInit {
   }
 
   loadInventory(): void {
-    const isAdmin = this.currentUser?.role === 'ADMIN';
+    this.isLoading = true;
 
-    const request$ = isAdmin
+    const request$ = this.isAdminUser
       ? this.inventoryService.getAnyBranchInventory(this.selectedBranchId!)
       : this.inventoryService.getMyBranchInventory();
 
@@ -210,20 +256,27 @@ export class InventoryDashboard implements OnInit {
       next: (data) => {
         this.ngZone.run(() => {
           this.products = data;
+          this.isLoading = false;
           this.filterProducts();
         });
       },
       error: (err) => {
         this.ngZone.run(() => {
           this.errorMessage = 'Failed to load inventory.';
+          this.isLoading = false;
           console.error(err);
-          this.cdr.detectChanges();
         });
       }
     });
   }
 
-  onBranchChange(): void {
+  onBranchChange(eventOrId?: any): void {
+    if (typeof eventOrId === 'number' || typeof eventOrId === 'string') {
+      this.selectedBranchId = +eventOrId;
+    }
+    
+    this.products = [];
+    this.filteredProducts = [];
     this.loadInventory();
   }
 
@@ -237,7 +290,7 @@ export class InventoryDashboard implements OnInit {
   }
 
   filterProducts(): void {
-    const q = this.searchTerm.toLowerCase();
+    const q = this.searchQuery.toLowerCase();
 
     // Enrich all products with computed fields
     this.products.forEach(p => {
@@ -265,8 +318,6 @@ export class InventoryDashboard implements OnInit {
       catEmoji: this.getCatEmoji(cat),
       items: this.filteredProducts.filter(p => p.computedCategory === cat),
     }));
-
-    this.cdr.detectChanges();
   }
 
   /** Uses API's lowStock boolean directly — no hardcoded 20kg threshold */
@@ -292,6 +343,11 @@ export class InventoryDashboard implements OnInit {
 
   setTab(tab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'create-branch' | 'role-definition'): void {
     this.activeTab = tab;
+    
+    // Clear global search everywhere on tab change
+    this.searchQuery = '';
+    this.searchService.clearQuery();
+    
     if (tab === 'create-role') {
       if (!this.createRoleBranchesLoaded) { this.loadCreateRoleBranches(); }
       if (!this.createRoleRolesLoaded)   { this.loadCreateRoleRoles();    }
@@ -536,5 +592,68 @@ export class InventoryDashboard implements OnInit {
     if (this.products.length > 0) return this.products[0].branchName;
     if (this.currentUser?.role === 'ADMIN') return 'Select a Branch';
     return 'Your Branch';
+  }
+
+  showToast(message: string, type: 'success' | 'error' = 'success') {
+    this.toastMessage = message;
+    this.toastType = type;
+    this.showToastFlag = true;
+    setTimeout(() => { this.showToastFlag = false; this.cdr.detectChanges(); }, 3000); // auto hide after 3 seconds
+  }
+
+  toggleBulkEdit() { 
+    this.isBulkEditMode = !this.isBulkEditMode; 
+    this.bulkEdits = {}; 
+  }
+
+  saveBulkEdits() {
+    const updates = Object.entries(this.bulkEdits)
+      .map(([inventoryId, newQuantity]) => ({ inventoryId: +inventoryId, newQuantity }));
+    if (!updates.length) return;
+    this.inventoryService.bulkUpdate({ updates }).subscribe({
+      next: () => { 
+        this.showToast('Stock updated successfully'); 
+        this.toggleBulkEdit(); 
+        this.loadInventory(); 
+      },
+      error: () => this.showToast('Failed to update stock', 'error')
+    });
+  }
+
+  cancelBulkEdits() { 
+    this.isBulkEditMode = false; 
+    this.bulkEdits = {}; 
+  }
+
+  openTransferModal(item: any) {
+    this.transferError = '';
+    this.transferForm = {
+      productId: item.productId,
+      productName: item.productName,
+      fromBranchId: item.branchId,
+      toBranchId: null,
+      quantity: null,
+      maxQuantity: item.availableStockKg ?? item.quantity ?? item.stock ?? 0
+    };
+    this.showTransferModal = true;
+  }
+
+  submitTransfer() {
+    this.transferError = ''; // clear previous error
+    this.inventoryService.transferStock(this.transferForm as any).subscribe({
+      next: () => { 
+        this.showToast('Stock transferred successfully', 'success'); 
+        this.showTransferModal = false; 
+        this.transferError = '';
+        this.loadInventory(); 
+      },
+      error: (err) => {
+        const message = err?.error?.error || err?.error?.message 
+                     || err?.error 
+                     || 'Transfer failed. Please try again.';
+        this.transferError = message; // show inside modal
+        this.showToast(message, 'error'); // also show toast
+      }
+    });
   }
 }

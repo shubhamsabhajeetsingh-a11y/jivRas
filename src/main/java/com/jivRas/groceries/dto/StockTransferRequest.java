@@ -15,7 +15,7 @@ public class StockTransferRequest {
     private Long productId;
  
     // How many kg to transfer
-    private Double quantityKg;
+    private Double quantity;
  
     // Optional reason — shown in audit trail
     private String reason;

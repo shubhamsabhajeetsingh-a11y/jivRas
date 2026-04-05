@@ -36,4 +36,18 @@ export class InventoryService {
   updateStock(request: BranchInventoryRequest): Observable<BranchInventoryResponse> {
     return this.http.post<BranchInventoryResponse>(`${this.baseUrl}/stock`, request);
   }
+
+  /**
+   * Bulk update multiple stock entries
+   */
+  bulkUpdate(request: { updates: { inventoryId: number, newQuantity: number }[] }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/bulk-update`, request);
+  }
+
+  /**
+   * Transfer stock between branches
+   */
+  transferStock(request: { productId: number, fromBranchId: number, toBranchId: number, quantity: number }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/transfer`, request);
+  }
 }

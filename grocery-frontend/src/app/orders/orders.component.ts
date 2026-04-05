@@ -1,47 +1,65 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { OrdersService, AdminOrderResponse } from '../core/services/orders.service';
+import { SearchService } from '../core/services/search.service';
 
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.css'
 })
-export class OrdersComponent implements OnInit {
+export class OrdersComponent implements OnInit, OnDestroy {
 
-  groupedOrders: { [category: string]: AdminOrderResponse[] } = {};
+  allGroupedOrders: { [category: string]: AdminOrderResponse[] } = {};
+  groupedOrders:    { [category: string]: AdminOrderResponse[] } = {};
   categoryKeys: string[] = [];
   expandedCategories: Set<string> = new Set<string>();
   expandedOrders: Set<number> = new Set<number>();
-  
-  isLoading: boolean = false;
-  errorMessage: string = '';
 
-  // Summary Stats
-  totalOrders: number = 0;
-  pendingOrders: number = 0;
-  deliveredOrders: number = 0;
-  cancelledOrders: number = 0;
+  isLoading = false;
+  errorMessage = '';
+
+  // KPI cards — always reflect the filtered result
+  totalOrders     = 0;
+  pendingOrders   = 0;
+  deliveredOrders = 0;
+  cancelledOrders = 0;
+
+  // Status/date filters
+  filters = { status: '', from: '', to: '' };
+
+  // Tracks the latest search query emitted by the service
+  currentSearchQuery = '';
 
   // Status updating state
   statusError: { [orderId: number]: string } = {};
-
   availableStatuses = ['CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
+
+  private searchSub?: Subscription;
 
   constructor(
     private ordersService: OrdersService,
+    private searchService: SearchService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    // Subscribe once; keep currentSearchQuery in sync and re-apply all filters
+    this.searchSub = this.searchService.query$.subscribe(query => {
+      this.currentSearchQuery = query;
+      this.applyAllFilters(query);
+    });
+
     this.isLoading = true;
     this.ordersService.getOrdersGroupedByCategory().subscribe({
       next: (data) => {
-        this.groupedOrders = data;
-        this.categoryKeys = Object.keys(data);
-        this.calculateStats(data);
+        this.allGroupedOrders = data;
+        // Apply the current search + filter state to freshly loaded data
+        this.applyAllFilters(this.currentSearchQuery);
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -59,18 +77,74 @@ export class OrdersComponent implements OnInit {
     });
   }
 
-  calculateStats(data: { [category: string]: AdminOrderResponse[] }): void {
-    let total = 0;
-    let delivered = 0;
-    let cancelled = 0;
-    let pending = 0;
+  // ── Core filter engine ─────────────────────────────────────────────
 
-    const countedIds = new Set<number>();
+  applyAllFilters(searchQuery: string = ''): void {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered: { [category: string]: AdminOrderResponse[] } = {};
 
-    Object.values(data).forEach(orders => {
+    for (const cat of Object.keys(this.allGroupedOrders)) {
+      let orders = [...this.allGroupedOrders[cat]];
+
+      // Search: customer name, phone, order ID
+      if (q) {
+        orders = orders.filter(o =>
+          o.customerName?.toLowerCase().includes(q) ||
+          o.mobile?.includes(q) ||
+          o.orderId?.toString().includes(q)
+        );
+      }
+
+      // Status filter
+      if (this.filters.status) {
+        orders = orders.filter(o => o.orderStatus === this.filters.status);
+      }
+
+      // Date from
+      if (this.filters.from) {
+        const from = new Date(this.filters.from);
+        orders = orders.filter(o => new Date(o.orderDate) >= from);
+      }
+
+      // Date to (inclusive of the whole day)
+      if (this.filters.to) {
+        const to = new Date(this.filters.to);
+        to.setHours(23, 59, 59, 999);
+        orders = orders.filter(o => new Date(o.orderDate) <= to);
+      }
+
+      if (orders.length > 0) {
+        filtered[cat] = orders;
+      }
+    }
+
+    this.groupedOrders = filtered;
+    this.categoryKeys   = Object.keys(filtered);
+    this.calculateStats();
+    this.cdr.detectChanges();
+  }
+
+  // Called by status / date filter controls in the template
+  onFilterChange(): void {
+    this.applyAllFilters(this.currentSearchQuery);
+  }
+
+  clearFilters(): void {
+    this.filters = { status: '', from: '', to: '' };
+    // clearQuery() emits '' → subscription calls applyAllFilters('') automatically
+    this.searchService.clearQuery();
+  }
+
+  // ── KPI stats — always computed from filtered groupedOrders ───────
+
+  calculateStats(): void {
+    let total = 0, delivered = 0, cancelled = 0, pending = 0;
+    const seen = new Set<number>();
+
+    Object.values(this.groupedOrders).forEach(orders => {
       orders.forEach(order => {
-        if (!countedIds.has(order.orderId)) {
-          countedIds.add(order.orderId);
+        if (!seen.has(order.orderId)) {
+          seen.add(order.orderId);
           total++;
           const st = order.orderStatus?.toUpperCase() || '';
           if (st === 'DELIVERED') delivered++;
@@ -80,69 +154,73 @@ export class OrdersComponent implements OnInit {
       });
     });
 
-    this.totalOrders = total;
+    this.totalOrders     = total;
     this.deliveredOrders = delivered;
     this.cancelledOrders = cancelled;
-    this.pendingOrders = pending;
+    this.pendingOrders   = pending;
   }
 
+  // ── UI helpers ─────────────────────────────────────────────────────
+
   toggleCategory(category: string): void {
-    if (this.expandedCategories.has(category)) {
-      this.expandedCategories.delete(category);
-    } else {
-      this.expandedCategories.add(category);
-    }
+    this.expandedCategories.has(category)
+      ? this.expandedCategories.delete(category)
+      : this.expandedCategories.add(category);
   }
 
   toggleOrderItems(orderId: number): void {
-    if (this.expandedOrders.has(orderId)) {
-      this.expandedOrders.delete(orderId);
-    } else {
-      this.expandedOrders.add(orderId);
-    }
+    this.expandedOrders.has(orderId)
+      ? this.expandedOrders.delete(orderId)
+      : this.expandedOrders.add(orderId);
   }
 
   updateOrderStatus(order: AdminOrderResponse, event: any): void {
     const newStatus = event.target.value;
     if (!newStatus || order.orderStatus === newStatus) return;
-    
+
     this.statusError[order.orderId] = '';
-    
+
     this.ordersService.updateOrderStatus(order.orderId, newStatus).subscribe({
       next: () => {
         order.orderStatus = newStatus;
-        this.calculateStats(this.groupedOrders);
+        this.calculateStats(); // refresh KPIs after status change
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.statusError[order.orderId] = 'Failed to update status. Please try again.';
-        event.target.value = order.orderStatus; // reset to previous
+        event.target.value = order.orderStatus;
         this.cdr.detectChanges();
       }
     });
   }
 
+  get hasActiveFilters(): boolean {
+    return !!(this.filters.status || this.filters.from || this.filters.to || this.currentSearchQuery);
+  }
+
   getStatusClass(status: string): string {
-    if (!status) return 'badge-grey';
-    switch (status.toUpperCase()) {
-      case 'CREATED': return 'badge-grey';
-      case 'CONFIRMED': return 'badge-blue';
-      case 'DISPATCHED': return 'badge-orange';
-      case 'DELIVERED': return 'badge-green';
-      case 'CANCELLED': return 'badge-red';
-      default: return 'badge-grey';
+    switch (status?.toUpperCase()) {
+      case 'CREATED':          return 'badge-grey';
+      case 'CONFIRMED':        return 'badge-blue';
+      case 'DISPATCHED':       return 'badge-orange';
+      case 'DELIVERED':        return 'badge-green';
+      case 'CANCELLED':        return 'badge-red';
+      default:                 return 'badge-grey';
     }
   }
 
   getBorderColor(status: string): string {
-    if (!status) return '#e0e0e0';
-    switch (status.toUpperCase()) {
-      case 'CREATED': return '#9e9e9e';
-      case 'CONFIRMED': return '#1976d2';
-      case 'DISPATCHED': return '#e65100';
-      case 'DELIVERED': return '#2e7d32';
-      case 'CANCELLED': return '#c62828';
-      default: return '#e0e0e0';
+    switch (status?.toUpperCase()) {
+      case 'CREATED':          return '#9e9e9e';
+      case 'CONFIRMED':        return '#1976d2';
+      case 'DISPATCHED':       return '#e65100';
+      case 'DELIVERED':        return '#2e7d32';
+      case 'CANCELLED':        return '#c62828';
+      default:                 return '#e0e0e0';
     }
+  }
+
+  ngOnDestroy(): void {
+    this.searchSub?.unsubscribe();
   }
 }

@@ -1,5 +1,14 @@
 <div class="shell">
 
+  <!-- Toast Notification -->
+  <div class="toast-notification" 
+       *ngIf="showToastFlag"
+       [class.success]="toastType === 'success'"
+       [class.error]="toastType === 'error'">
+    {{ toastMessage }}
+  </div>
+
+
   <!-- ── Sidebar ── -->
   <nav class="sidebar">
     <div class="brand">
@@ -19,20 +28,20 @@
       </div>
       <!-- Create Role — ADMIN only -->
       <!-- Hide Create Role from sidebar — accessible via Role Definition page button only -->
-      <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
+      <div class="nav-item nav-item-admin" *ngIf="isAdminUser"
            [class.active]="activeTab === 'create-role'"
            (click)="setTab('create-role')"
            style="display: none;">
         <span class="nav-icon">👤</span> Create Role
       </div>
       <!-- Create Branch — ADMIN only -->
-      <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
+      <div class="nav-item nav-item-admin" *ngIf="isAdminUser"
            [class.active]="activeTab === 'create-branch'"
            (click)="setTab('create-branch')">
         <span class="nav-icon">🏪</span> Create Branch
       </div>
       <!-- Role Definition — ADMIN only -->
-      <div class="nav-item nav-item-admin" *ngIf="currentUser?.role === 'ADMIN'"
+      <div class="nav-item nav-item-admin" *ngIf="isAdminUser"
            [class.active]="activeTab === 'role-definition'"
            (click)="setTab('role-definition')">
         <span class="nav-icon">🔐</span> Role Definition
@@ -94,18 +103,18 @@
       <!-- Branch label (non-admins) or branch switcher (ADMIN) -->
       <ng-container *ngIf="activeTab === 'inventory'">
         <!-- ADMIN: Branch dropdown to switch context -->
-        <div class="branch-selector" *ngIf="currentUser?.role === 'ADMIN'">
+        <div class="branch-selector" *ngIf="isAdminUser">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
-          <select [(ngModel)]="selectedBranchId" (change)="onBranchChange()" class="branch-select" id="branchSelect">
+          <select [(ngModel)]="selectedBranchId" (ngModelChange)="onBranchChange($event)" class="branch-select" id="branchSelect">
             <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
           </select>
         </div>
 
         <!-- EMPLOYEE/BRANCH_MANAGER: Static branch name label -->
-        <div class="branch-label-wrap" *ngIf="currentUser?.role !== 'ADMIN'">
+        <div class="branch-label-wrap" *ngIf="!isAdminUser">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
@@ -118,8 +127,8 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filterProducts()"
-               placeholder="Search inventory by name…" id="searchInput">
+        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="onSearch()"
+               [placeholder]="searchPlaceholder" id="searchInput">
       </div>
 
       <div class="view-toggle">
@@ -141,7 +150,7 @@
       </div>
 
       <!-- Add Item — ADMIN only -->
-      <button *ngIf="activeTab === 'inventory' && currentUser?.role === 'ADMIN'"
+      <button *ngIf="activeTab === 'inventory' && isAdminUser"
               class="add-btn" routerLink="/add-product">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19"/>
@@ -162,14 +171,19 @@
 
       <!-- ── Inventory Tab ── -->
       <ng-container *ngIf="activeTab === 'inventory'">
+        <!-- Loading indicator -->
+        <div class="loading-state" *ngIf="isLoading">
+          Loading inventory...
+        </div>
+
         <!-- Empty state -->
-        <div *ngIf="filteredProducts.length === 0" class="empty-state">
+        <div *ngIf="!isLoading && filteredProducts.length === 0" class="empty-state">
           <div class="empty-icon">📦</div>
           <div>No products found.</div>
         </div>
 
       <!-- ── Card View ── -->
-      <ng-container *ngIf="currentView === 'card' && filteredProducts.length > 0">
+      <ng-container *ngIf="!isLoading && currentView === 'card' && filteredProducts.length > 0">
         <ng-container *ngFor="let group of groupedProducts">
           <div class="section-header">
             <div class="section-dot" [style.background]="group.catColor"></div>
@@ -215,7 +229,7 @@
                 <div class="card-actions">
                   <button class="btn-save" (click)="updateStock(p)">Save</button>
                   <!-- Delete restricted to ADMIN only -->
-                  <button *ngIf="currentUser?.role === 'ADMIN'" class="btn-del" (click)="deleteProduct(p.id)">Delete</button>
+                  <button *ngIf="isAdminUser" class="btn-del" (click)="deleteProduct(p.id)">Delete</button>
                 </div>
               </div>
             </div>
@@ -224,7 +238,16 @@
       </ng-container>
 
       <!-- ── Table View ── -->
-      <ng-container *ngIf="currentView === 'table' && filteredProducts.length > 0">
+      <ng-container *ngIf="!isLoading && currentView === 'table' && filteredProducts.length > 0">
+        <div class="bulk-actions" style="margin-bottom: 15px;">
+          <button (click)="toggleBulkEdit()" [class.active]="isBulkEditMode" style="padding: 6px 12px; cursor: pointer;">
+            {{ isBulkEditMode ? 'Cancel' : '✏️ Bulk Edit' }}
+          </button>
+          <button *ngIf="isBulkEditMode" (click)="saveBulkEdits()" class="save-btn" style="padding: 6px 12px; cursor: pointer; margin-left:10px; background: #28a745; color: white;">
+            💾 Save All Changes
+          </button>
+        </div>
+
         <ng-container *ngFor="let group of groupedProducts">
           <div class="section-header">
             <div class="section-dot" [style.background]="group.catColor"></div>
@@ -259,8 +282,11 @@
                     <input type="number" [(ngModel)]="p.pricePerKg" min="1" class="tbl-input" (ngModelChange)="onItemChange(p)">
                   </td>
                   <td>
-                    <input type="number" [(ngModel)]="p.availableStockKg" min="0" class="tbl-input"
-                           [class.stock-low]="p.lowStock" (ngModelChange)="onItemChange(p)">
+                    <span *ngIf="!isBulkEditMode">{{ p.availableStockKg }}</span>
+                    <input *ngIf="isBulkEditMode" type="number" 
+                           [value]="bulkEdits[p.id] !== undefined ? bulkEdits[p.id] : p.availableStockKg"
+                           (input)="bulkEdits[p.id] = +$any($event.target).value"
+                           min="0" class="bulk-input tbl-input"/>
                   </td>
                   <td>
                     <input type="number" [(ngModel)]="p.lowStockThreshold" min="0" class="tbl-input"
@@ -272,7 +298,10 @@
                   <td class="td-actions">
                     <button class="tbl-save" (click)="updateStock(p)">Save</button>
                     <!-- Delete restricted to ADMIN only -->
-                    <button *ngIf="currentUser?.role === 'ADMIN'" class="tbl-del" (click)="deleteProduct(p.id)">Delete</button>
+                    <button *ngIf="isAdminUser" class="tbl-del" (click)="deleteProduct(p.id)">Delete</button>
+                    <button (click)="openTransferModal(p)" class="transfer-btn tbl-save" style="background:#5a5a5a; margin-left: 5px;">
+                      🚚 Transfer
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -289,7 +318,7 @@
       <app-reports [hidden]="activeTab !== 'reports'"></app-reports>
 
       <!-- ── Create Role Tab (ADMIN only) ── -->
-      <div *ngIf="activeTab === 'create-role' && currentUser?.role === 'ADMIN'" class="cr-wrapper">
+      <div *ngIf="activeTab === 'create-role' && isAdminUser" class="cr-wrapper">
         <div class="cr-card">
           <div class="cr-header">
             <div class="cr-icon">👤</div>
@@ -411,7 +440,7 @@
       </div>
 
       <!-- ── Create Branch Tab (ADMIN only) ── -->
-      <div *ngIf="activeTab === 'create-branch' && currentUser?.role === 'ADMIN'" class="cr-wrapper">
+      <div *ngIf="activeTab === 'create-branch' && isAdminUser" class="cr-wrapper">
         <div class="cr-card">
           <div class="cr-header">
             <div class="cr-icon">🏪</div>
@@ -478,7 +507,7 @@
       </div>
 
       <!-- ── Role Definition Tab (ADMIN only) ── -->
-      <div *ngIf="activeTab === 'role-definition' && currentUser?.role === 'ADMIN'">
+      <div *ngIf="activeTab === 'role-definition' && isAdminUser">
         <app-role-definition (tabChange)="setTab($any($event))"></app-role-definition>
       </div>
 
@@ -496,5 +525,41 @@
       <button class="modal-btn modal-btn-cancel" (click)="cancelDelete()">Cancel</button>
       <button class="modal-btn modal-btn-confirm" (click)="confirmDelete()">Remove</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Transfer Stock Modal ── -->
+<div class="modal-overlay" *ngIf="showTransferModal">
+  <div class="modal-box" style="text-align: left;">
+    <h3 class="modal-title" style="margin-bottom: 20px;">Transfer Stock</h3>
+    <div class="form-group" style="margin-bottom: 15px;">
+      <label style="display: block; font-size: 0.9rem; margin-bottom: 5px; color: var(--text-muted);">Product</label>
+      <input [value]="transferForm.productName" readonly class="cr-input" style="width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 4px;"/>
+    </div>
+    <div class="form-group" style="margin-bottom: 15px;">
+      <label style="display: block; font-size: 0.9rem; margin-bottom: 5px; color: var(--text-muted);">To Branch</label>
+      <select [(ngModel)]="transferForm.toBranchId" class="cr-input" style="width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 4px;">
+        <option *ngFor="let b of branches" 
+                [value]="b.id"
+                [disabled]="b.id === transferForm.fromBranchId">
+          {{ b.name }}
+        </option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom: 25px;">
+      <label style="display: block; font-size: 0.9rem; margin-bottom: 5px; color: var(--text-muted);">Quantity (Max: {{ transferForm.maxQuantity }})</label>
+      <input type="number" [(ngModel)]="transferForm.quantity" 
+             [max]="transferForm.maxQuantity" min="1" class="cr-input" style="width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 4px;"/>
+    </div>
+    <!-- Inline error message inside modal -->
+    <div class="transfer-error" *ngIf="transferError">
+      ⚠️ {{ transferError }}
+    </div>
+
+    <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button class="modal-btn modal-btn-cancel" (click)="showTransferModal = false">Cancel</button>
+      <button class="modal-btn" (click)="submitTransfer()" style="background:var(--accent); color:white;">Transfer</button>
+    </div>
+
   </div>
 </div>

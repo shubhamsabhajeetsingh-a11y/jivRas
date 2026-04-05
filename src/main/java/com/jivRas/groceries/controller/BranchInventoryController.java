@@ -9,12 +9,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.dto.BranchInventoryRequest;
 import com.jivRas.groceries.dto.BranchInventoryResponse;
+import com.jivRas.groceries.dto.BulkStockUpdateRequest;
+import com.jivRas.groceries.dto.StockTransferRequest;
 import com.jivRas.groceries.entity.EmployeeUser;
 import com.jivRas.groceries.repository.EmployeeUserRepository;
 import com.jivRas.groceries.service.BranchInventoryService;
@@ -119,6 +122,43 @@ public class BranchInventoryController {
         }
 
         BranchInventoryResponse response = branchInventoryService.addOrUpdateStock(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/bulk-update")
+    public ResponseEntity<?> bulkUpdate(
+            @RequestBody BulkStockUpdateRequest request,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        dynamicAuthorizationService.evictPermissionCache(); // temporary cache buster
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body(java.util.Map.of("error", "Access denied"));
+        }
+
+        List<BranchInventoryResponse> response = branchInventoryService.bulkUpdateStock(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/transfer")
+    public ResponseEntity<?> transfer(
+            @RequestBody StockTransferRequest request,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        dynamicAuthorizationService.evictPermissionCache(); // temporary cache buster
+        String role = resolveRole(authentication);
+        System.out.println("====== TRANSFER CALLED ======");
+        System.out.println("Role: " + role);
+        System.out.println("URI: " + httpRequest.getRequestURI());
+        
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            System.out.println("Access denied by DynamicAuthorizationService");
+            return ResponseEntity.status(403).body(java.util.Map.of("error", "Access denied"));
+        }
+
+        java.util.Map<String, Object> response = branchInventoryService.transferStock(request);
         return ResponseEntity.ok(response);
     }
 
