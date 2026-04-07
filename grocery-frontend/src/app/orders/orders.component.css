@@ -378,6 +378,9 @@ h2 {
   padding: 12px 20px;
   background: #fafafa;
   border-top: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .toggle-items-btn {
@@ -487,4 +490,92 @@ h2 {
     align-items: flex-start;
     gap: 4px;
   }
+}
+
+/* Download Invoice Button */
+.download-invoice-btn {
+  background: none;
+  border: none;
+  color: #2e7d32;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: all 0.2s;
+}
+
+.download-invoice-btn:hover {
+  text-decoration-color: #2e7d32;
+}
+
+.download-invoice-btn:disabled {
+  color: #aaa;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* ── Order Status Timeline ─────────────────────────────────────── */
+
+.timeline-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.timeline-dot.done {
+  background: #2e7d32;
+}
+
+.timeline-dot.pending {
+  background: transparent;
+  border: 2px solid #bdbdbd;
+}
+
+.timeline-dot.cancelled {
+  background: #c62828;
+}
+
+.timeline-line {
+  flex: 1;
+  height: 2px;
+  background: #e0e0e0;
+  min-width: 40px;
+}
+
+.timeline-line.done {
+  background: #2e7d32;
+}
+
+.timeline-label {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+  color: #555;
+}
+
+.timeline-time {
+  font-size: 10px;
+  color: #7a7a7a;
+  margin-top: 2px;
 }

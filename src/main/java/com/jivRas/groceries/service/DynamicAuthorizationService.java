@@ -51,28 +51,15 @@ public class DynamicAuthorizationService {
         // Strip ROLE_ prefix if it was passed through from Spring Security
         String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
 
-        // 1. Exact HTTP-method rules for this role
-        List<RolePermission> exactMethodRules =
-                rolePermissionRepository.findByRoleAndMethod(cleanRole, httpMethod.toUpperCase());
+        // Fetch all rules for this role, then evaluate method in Java so that
+        // stored method "*" is treated as a wildcard matching any HTTP method.
+        List<RolePermission> allRules = rolePermissionRepository.findByRole(cleanRole);
 
-        // 2. Wildcard method rules ("*") for this role
-        List<RolePermission> wildcardMethodRules =
-                rolePermissionRepository.findWildcardByRole(cleanRole);
-
-        // Merge both lists and evaluate
         boolean matchFound = false;
 
-        for (RolePermission rp : exactMethodRules) {
-            if (pathMatches(rp.getEndpoint(), endpoint)) {
-                if (!rp.isAllowed()) {
-                    return false; // Explicit deny takes priority
-                }
-                matchFound = true;
-            }
-        }
-
-        for (RolePermission rp : wildcardMethodRules) {
-            if (pathMatches(rp.getEndpoint(), endpoint)) {
+        for (RolePermission rp : allRules) {
+            if (("*".equals(rp.getHttpMethod()) || rp.getHttpMethod().equalsIgnoreCase(httpMethod))
+                    && pathMatches(rp.getEndpoint(), endpoint)) {
                 if (!rp.isAllowed()) {
                     return false; // Explicit deny takes priority
                 }

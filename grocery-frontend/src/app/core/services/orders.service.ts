@@ -43,4 +43,12 @@ export class OrdersService {
   updateOrderStatus(id: number, status: string): Observable<any> {
     return this.http.patch(`${environment.apiUrl}/api/orders/${id}/status`, { status });
   }
+
+  getOrderTimeline(orderId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/api/orders/${orderId}/timeline`);
+  }
+
+  downloadInvoice(orderId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/api/orders/${orderId}/invoice`, { responseType: 'blob' });
+  }
 }

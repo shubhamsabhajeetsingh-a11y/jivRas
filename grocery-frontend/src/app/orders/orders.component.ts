@@ -39,6 +39,14 @@ export class OrdersComponent implements OnInit, OnDestroy {
   statusError: { [orderId: number]: string } = {};
   availableStatuses = ['CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
 
+  // Timeline state
+  timelineData: { [orderId: number]: any[] } = {};
+  loadingTimeline: Set<number> = new Set();
+  readonly timelineSteps = ['CREATED', 'CONFIRMED', 'DISPATCHED', 'DELIVERED'];
+
+  // Invoice download state
+  invoiceLoading: Set<number> = new Set();
+
   private searchSub?: Subscription;
 
   constructor(
@@ -169,9 +177,54 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   toggleOrderItems(orderId: number): void {
-    this.expandedOrders.has(orderId)
-      ? this.expandedOrders.delete(orderId)
-      : this.expandedOrders.add(orderId);
+    if (this.expandedOrders.has(orderId)) {
+      this.expandedOrders.delete(orderId);
+    } else {
+      this.expandedOrders.add(orderId);
+      this.loadingTimeline.add(orderId);
+      this.loadTimeline(orderId);
+    }
+  }
+
+  loadTimeline(orderId: number): void {
+    this.ordersService.getOrderTimeline(orderId).subscribe({
+      next: (data) => {
+        this.timelineData[orderId] = data;
+        this.loadingTimeline.delete(orderId);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingTimeline.delete(orderId);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  getTimelineEntry(orderId: number, status: string): any {
+    return this.timelineData[orderId]?.find(e => e.status === status) ?? null;
+  }
+
+  downloadInvoice(orderId: number): void {
+    this.invoiceLoading.add(orderId);
+    this.cdr.detectChanges();
+
+    this.ordersService.downloadInvoice(orderId).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `JivRas_Invoice_#${orderId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.invoiceLoading.delete(orderId);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.statusError[orderId] = 'Failed to download invoice. Please try again.';
+        this.invoiceLoading.delete(orderId);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   updateOrderStatus(order: AdminOrderResponse, event: any): void {

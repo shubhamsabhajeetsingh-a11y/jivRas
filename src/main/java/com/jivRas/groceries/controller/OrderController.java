@@ -1,5 +1,7 @@
 package com.jivRas.groceries.controller;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,9 +18,12 @@ import com.jivRas.groceries.dto.CheckoutRequest;
 import com.jivRas.groceries.dto.OrderResponse;
 import com.jivRas.groceries.dto.AdminOrderResponse;
 import com.jivRas.groceries.entity.Order;
+import com.jivRas.groceries.entity.OrderStatusHistory;
 import com.jivRas.groceries.exception.ResourceNotFoundException;
 import com.jivRas.groceries.repository.OrderRepository;
+import com.jivRas.groceries.repository.OrderStatusHistoryRepository;
 import com.jivRas.groceries.service.DynamicAuthorizationService;
+import com.jivRas.groceries.service.InvoiceService;
 import com.jivRas.groceries.service.OrderService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +45,8 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final DynamicAuthorizationService dynamicAuthorizationService;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final InvoiceService invoiceService;
 
     /**
      * POST /api/orders/checkout
@@ -138,11 +145,65 @@ public class OrderController {
         order.setOrderStatus(newStatus);
         orderRepository.save(order);
 
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setOrderId(id);
+        history.setStatus(newStatus);
+        history.setChangedBy(authentication.getName());
+        orderStatusHistoryRepository.save(history);
+
         return ResponseEntity.ok(Map.of(
                 "orderId", id,
                 "newStatus", newStatus,
                 "message", "Order status updated successfully"
         ));
+    }
+
+    /**
+     * GET /api/orders/{id}/invoice
+     * Generates and downloads a PDF invoice for the given order.
+     */
+    @GetMapping("/{id}/invoice")
+    public ResponseEntity<?> downloadInvoice(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
+
+        byte[] pdf = invoiceService.generateInvoice(order);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"JivRas_Invoice_#" + id + ".pdf\"");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdf);
+    }
+
+    /**
+     * GET /api/orders/{id}/timeline
+     * Returns status change history for an order in chronological order.
+     */
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<?> getOrderTimeline(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+
+        String role = resolveRole(authentication);
+        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
+            return ResponseEntity.status(403).body("Access denied");
+        }
+        List<OrderStatusHistory> timeline = orderStatusHistoryRepository.findByOrderIdOrderByChangedAtAsc(id);
+        return ResponseEntity.ok(timeline);
     }
 
     // ──────────────────────────── Helpers ──────────────────────────────────────

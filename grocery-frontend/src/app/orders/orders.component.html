@@ -130,6 +130,11 @@
             <button class="toggle-items-btn" (click)="toggleOrderItems(order.orderId)">
               View Items <span class="chevron" [class.chevron-up]="expandedOrders.has(order.orderId)">▼</span>
             </button>
+            <button class="download-invoice-btn"
+                    (click)="downloadInvoice(order.orderId)"
+                    [disabled]="invoiceLoading.has(order.orderId)">
+              {{ invoiceLoading.has(order.orderId) ? 'Generating...' : '🧾 Download Invoice' }}
+            </button>
           </div>
 
           <!-- Items Table -->
@@ -156,6 +161,41 @@
                 </tr>
               </tbody>
             </table>
+
+            <!-- Timeline loading indicator -->
+            <div style="padding: 12px 16px; text-align: center;" *ngIf="loadingTimeline.has(order.orderId)">
+              <div class="spinner" style="width: 18px; height: 18px; border-width: 2px; margin: 0 auto;"></div>
+            </div>
+
+            <!-- Order Status Timeline -->
+            <div class="timeline-wrapper" *ngIf="timelineData[order.orderId] && timelineData[order.orderId].length > 0">
+              <ng-container *ngFor="let step of timelineSteps; let i = index">
+                <div class="timeline-line"
+                     *ngIf="i > 0"
+                     [class.done]="!!getTimelineEntry(order.orderId, timelineSteps[i - 1])">
+                </div>
+                <div class="timeline-step">
+                  <div class="timeline-dot"
+                       [class.done]="!!getTimelineEntry(order.orderId, step)"
+                       [class.pending]="!getTimelineEntry(order.orderId, step)">
+                  </div>
+                  <div class="timeline-label">{{ step }}</div>
+                  <div class="timeline-time" *ngIf="getTimelineEntry(order.orderId, step) as entry">
+                    {{ entry.changedAt | date:'dd MMM yyyy, HH:mm' }}
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Cancelled terminal dot (only when order was cancelled) -->
+              <ng-container *ngIf="getTimelineEntry(order.orderId, 'CANCELLED') as cancelEntry">
+                <div class="timeline-line"></div>
+                <div class="timeline-step">
+                  <div class="timeline-dot cancelled"></div>
+                  <div class="timeline-label">CANCELLED</div>
+                  <div class="timeline-time">{{ cancelEntry.changedAt | date:'dd MMM yyyy, HH:mm' }}</div>
+                </div>
+              </ng-container>
+            </div>
           </div>
 
         </div>
