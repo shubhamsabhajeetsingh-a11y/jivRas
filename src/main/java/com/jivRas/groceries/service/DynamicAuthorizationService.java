@@ -1,105 +1,98 @@
 package com.jivRas.groceries.service;
 
-import java.util.List;
-
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.jivRas.groceries.config.ModuleActionScanner;
 import com.jivRas.groceries.entity.RolePermission;
 import com.jivRas.groceries.repository.RolePermissionRepository;
 
+import java.util.Optional;
+
 /**
- * Evaluates whether a given role may call a specific endpoint + HTTP method.
+ * Evaluates whether a given role may call a specific endpoint + HTTP method
+ * by mapping the request to a logical module+action pair via
+ * {@link ModuleActionScanner}, then querying the {@code role_permissions} table.
  *
- * <p>Resolution order:
+ * <p>Resolution steps:
  * <ol>
- *   <li>Exact method match (e.g. GET) + exact or wildcard-path permission rows.</li>
- *   <li>Wildcard method ("*") + exact or wildcard-path permission rows.</li>
+ *   <li>Null-check inputs → deny.</li>
+ *   <li>Strip {@code ROLE_} prefix from Spring Security authority strings.</li>
+ *   <li>SUPER_ADMIN bypass — always allowed, no DB query needed.</li>
+ *   <li>Resolve {@code (httpMethod, uri)} → {@code (module, action)} via the
+ *       in-memory scanner registry.</li>
+ *   <li>Unmapped endpoint → deny by default.</li>
+ *   <li>Query DB for {@code (role, module, action)} → if absent → deny.</li>
+ *   <li>Return {@code rp.isAllowed()}.</li>
  * </ol>
  *
- * <p>Endpoint patterns support a trailing {@code /**} wildcard.
- * Example: "/api/inventory/**" matches "/api/inventory/my-branch".
- *
- * <p>Results are cached by (role, endpoint, method) to avoid repeated DB hits.
- * Call {@link #evictPermissionCache()} whenever permissions are mutated via the
- * admin CRUD API so stale entries are cleared immediately.
+ * <p>Results are cached by {@code (role, endpoint, method)} to avoid repeated
+ * DB hits. Call {@link #evictPermissionCache()} whenever permissions are mutated
+ * via the admin API so stale entries are refreshed immediately.
  */
 @Service
 public class DynamicAuthorizationService {
 
     private final RolePermissionRepository rolePermissionRepository;
+    private final ModuleActionScanner moduleActionScanner;
 
-    public DynamicAuthorizationService(RolePermissionRepository rolePermissionRepository) {
+    public DynamicAuthorizationService(
+            RolePermissionRepository rolePermissionRepository,
+            ModuleActionScanner moduleActionScanner) {
         this.rolePermissionRepository = rolePermissionRepository;
+        this.moduleActionScanner = moduleActionScanner;
     }
 
     /**
      * Returns {@code true} if the given role is allowed to access the endpoint
      * with the specified HTTP method.
      *
-     * @param role       e.g. "ADMIN", "EMPLOYEE" (WITHOUT "ROLE_" prefix)
+     * @param role       e.g. "ROLE_EMPLOYEE" or "EMPLOYEE" — both accepted
      * @param endpoint   the actual request URI, e.g. "/api/inventory/my-branch"
      * @param httpMethod the HTTP verb in uppercase, e.g. "GET"
      */
     @Cacheable(value = "permissions", key = "#role + ':' + #endpoint + ':' + #httpMethod")
     public boolean isAllowed(String role, String endpoint, String httpMethod) {
+
+        System.out.println("RBAC CHECK → role: [" + role + "] endpoint: [" + endpoint + "] method: [" + httpMethod + "]");
+
+        // Step 1: null guard
         if (role == null || endpoint == null || httpMethod == null) {
             return false;
         }
 
-        // Strip ROLE_ prefix if it was passed through from Spring Security
+        // Step 2: strip ROLE_ prefix
         String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
+        System.out.println("cleanRole: [" + cleanRole + "] equals SUPER_ADMIN? " + "SUPER_ADMIN".equals(cleanRole));
 
-        // Fetch all rules for this role, then evaluate method in Java so that
-        // stored method "*" is treated as a wildcard matching any HTTP method.
-        List<RolePermission> allRules = rolePermissionRepository.findByRole(cleanRole);
-
-        boolean matchFound = false;
-
-        for (RolePermission rp : allRules) {
-            if (("*".equals(rp.getHttpMethod()) || rp.getHttpMethod().equalsIgnoreCase(httpMethod))
-                    && pathMatches(rp.getEndpoint(), endpoint)) {
-                if (!rp.isAllowed()) {
-                    return false; // Explicit deny takes priority
-                }
-                matchFound = true;
-            }
+        // Step 3: ADMIN / SUPER_ADMIN bypass — always allowed, no DB query needed
+        if ("ADMIN".equals(cleanRole) || "SUPER_ADMIN".equals(cleanRole)) {
+            return true;
         }
 
-        return matchFound;
-    }
+        // Step 4: resolve incoming request → module + action
+        String[] resolved = moduleActionScanner.resolveModuleAction(httpMethod, endpoint);
 
-    /**
-     * Checks whether a DB-stored endpoint pattern matches the actual request path.
-     * Supports a single trailing {@code /**} wildcard.
-     *
-     * <p>Examples:
-     * <ul>
-     *   <li>"/api/inventory/**" matches "/api/inventory/my-branch"</li>
-     *   <li>"/api/branches/{id}" matches "/api/branches/5" (treated as prefix-less wildcard)</li>
-     *   <li>"/api/products" only matches "/api/products" exactly</li>
-     * </ul>
-     */
-    private boolean pathMatches(String pattern, String actualPath) {
-        if (pattern == null || actualPath == null) {
+        // Step 5: unmapped endpoint → denied by default
+        if (resolved == null) {
             return false;
         }
-        // Strip query strings from actual path
-        String path = actualPath.split("\\?")[0];
 
-        if (pattern.endsWith("/**")) {
-            String prefix = pattern.substring(0, pattern.length() - 3);
-            return path.startsWith(prefix);
+        String module = resolved[0];
+        String action = resolved[1];
+
+        // Step 6: query DB
+        Optional<RolePermission> rpOpt =
+                rolePermissionRepository.findByRoleAndModuleAndAction(cleanRole, module, action);
+
+        // Step 7: no row → denied
+        if (rpOpt.isEmpty()) {
+            return false;
         }
 
-        // Support {id}-style path variables: convert to prefix match on the parent
-        if (pattern.contains("{")) {
-            String prefix = pattern.substring(0, pattern.indexOf("{") - 1);
-            return path.startsWith(prefix);
-        }
-
-        return pattern.equals(path);
+        // Step 8: return DB-stored flag
+        return rpOpt.get().isAllowed();
     }
 
     /**

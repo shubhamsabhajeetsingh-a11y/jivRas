@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.dto.*;
 import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.ReportService;
@@ -27,11 +28,6 @@ import lombok.RequiredArgsConstructor;
  *
  * All endpoints check DynamicAuthorizationService so permissions are managed
  * in the role_permissions table — same pattern as OrderController.
- *
- * Suggested role_permissions rows to seed:
- *   ADMIN          /api/reports/**  GET  true
- *   BRANCH_MANAGER /api/reports/**  GET  true
- *   EMPLOYEE       /api/reports/**  GET  false  (no access)
  */
 @RestController
 @RequestMapping("/api/reports")
@@ -47,6 +43,7 @@ public class ReportController {
      * GET /api/reports/summary
      * Today's total revenue, order count, top item, top category, low stock count.
      */
+    @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/summary")
     public ResponseEntity<?> getSummary(
             HttpServletRequest req, Authentication auth) {
@@ -58,9 +55,10 @@ public class ReportController {
     // ── Sales Trend ───────────────────────────────────────────────────
 
     /**
-     * GET /api/reports/sales-trend?from=2026-03-01&to=2026-04-04
+     * GET /api/reports/sales-trend?from=2026-03-01&amp;to=2026-04-04
      * Daily revenue + order count for the given date range (default: last 30 days).
      */
+    @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/sales-trend")
     public ResponseEntity<?> getSalesTrend(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -76,9 +74,10 @@ public class ReportController {
     // ── Top Products ──────────────────────────────────────────────────
 
     /**
-     * GET /api/reports/top-products?from=&to=&limit=10
+     * GET /api/reports/top-products?from=&amp;to=&amp;limit=10
      * Top N products by kg sold in the date range.
      */
+    @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/top-products")
     public ResponseEntity<?> getTopProducts(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -95,9 +94,10 @@ public class ReportController {
     // ── Category Breakdown ────────────────────────────────────────────
 
     /**
-     * GET /api/reports/category-breakdown?from=&to=
+     * GET /api/reports/category-breakdown?from=&amp;to=
      * Revenue and volume per product category.
      */
+    @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/category-breakdown")
     public ResponseEntity<?> getCategoryBreakdown(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -116,6 +116,7 @@ public class ReportController {
      * GET /api/reports/branch-comparison
      * Inventory health stats for every branch.
      */
+    @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/branch-comparison")
     public ResponseEntity<?> getBranchComparison(
             HttpServletRequest req, Authentication auth) {
@@ -130,6 +131,7 @@ public class ReportController {
      * GET /api/reports/low-stock
      * All branch-product entries below their threshold, with projected stockout.
      */
+    @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/low-stock")
     public ResponseEntity<?> getLowStock(
             HttpServletRequest req, Authentication auth) {
@@ -141,9 +143,10 @@ public class ReportController {
     // ── Excel Export ──────────────────────────────────────────────────
 
     /**
-     * GET /api/reports/export/excel?from=&to=
+     * GET /api/reports/export/excel?from=&amp;to=
      * Downloads a three-sheet .xlsx: Order Summary, Product Sales, Stock Alerts.
      */
+    @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/export/excel")
     public ResponseEntity<byte[]> exportExcel(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

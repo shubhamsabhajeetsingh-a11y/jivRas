@@ -11,16 +11,12 @@ import com.jivRas.groceries.repository.RolePermissionRepository;
 import jakarta.annotation.PostConstruct;
 
 /**
- * Seeds default role-endpoint permissions into {@code role_permissions} on
+ * Seeds default role+module+action permissions into {@code role_permissions} on
  * application startup — only if the table is completely empty.
  *
- * <p>Permission design decisions:
- * <ul>
- *   <li>ADMIN uses httpMethod {@code "*"} + endpoint {@code "/**"} to grant
- *       blanket access to every endpoint.</li>
- *   <li>Specific roles receive fine-grained method+endpoint entries.</li>
- *   <li>CUSTOMER only has read access to public product/category listings.</li>
- * </ul>
+ * <p>SUPER_ADMIN is intentionally omitted; it is short-circuited directly inside
+ * {@link com.jivRas.groceries.service.DynamicAuthorizationService} and never
+ * needs DB rows.
  */
 @Component
 public class DataSeeder {
@@ -38,63 +34,55 @@ public class DataSeeder {
             return;
         }
 
-        System.out.println("[DataSeeder] Seeding default role permissions...");
+        System.out.println("[DataSeeder] Seeding default role-module-action permissions...");
         List<RolePermission> permissions = new ArrayList<>();
 
-        // ── ADMIN ──────────────────────────────────────────────────────────────
-        // ADMIN gets wildcard access to everything
-        permissions.add(perm("ADMIN", "/**", "*", true));
+        // ── BRANCH_MANAGER ────────────────────────────────────────────────────
+        permissions.add(perm("BRANCH_MANAGER", "INVENTORY",  "VIEW",   true));
+        permissions.add(perm("BRANCH_MANAGER", "INVENTORY",  "CREATE", true));
+        permissions.add(perm("BRANCH_MANAGER", "INVENTORY",  "EDIT",   true));
+        permissions.add(perm("BRANCH_MANAGER", "ORDERS",     "VIEW",   true));
+        permissions.add(perm("BRANCH_MANAGER", "ORDERS",     "EDIT",   true));
+        permissions.add(perm("BRANCH_MANAGER", "REPORTS",    "VIEW",   true));
+        permissions.add(perm("BRANCH_MANAGER", "PRODUCTS",   "VIEW",   true));
+        permissions.add(perm("BRANCH_MANAGER", "CATEGORIES", "VIEW",   true));
+        permissions.add(perm("BRANCH_MANAGER", "BRANCHES",   "VIEW",   true));
+        permissions.add(perm("BRANCH_MANAGER", "USERS",      "VIEW",   true));
 
-        // ── BRANCH_MANAGER ─────────────────────────────────────────────────────
-        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**",      "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**",      "POST",  true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/inventory/**",      "PUT",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/branches/{id}",     "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/branches/active",   "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/products/**",       "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/categories/**",     "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/orders/admin/**",   "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/orders/**",         "PATCH", true));  // ← status update
-        permissions.add(perm("BRANCH_MANAGER", "/api/users/me",          "GET",   true));
-        permissions.add(perm("BRANCH_MANAGER", "/api/users/profile",     "GET",   true));
+        // ── EMPLOYEE ──────────────────────────────────────────────────────────
+        permissions.add(perm("EMPLOYEE", "INVENTORY",  "VIEW",   true));
+        permissions.add(perm("EMPLOYEE", "INVENTORY",  "EDIT",   true));
+        permissions.add(perm("EMPLOYEE", "INVENTORY",  "CREATE", true));
+        permissions.add(perm("EMPLOYEE", "ORDERS",     "VIEW",   true));
+        permissions.add(perm("EMPLOYEE", "ORDERS",     "EDIT",   true));
+        permissions.add(perm("EMPLOYEE", "PRODUCTS",   "VIEW",   true));
+        permissions.add(perm("EMPLOYEE", "PRODUCTS",   "CREATE", true));
+        permissions.add(perm("EMPLOYEE", "PRODUCTS",   "EDIT",   true));
+        permissions.add(perm("EMPLOYEE", "CATEGORIES", "VIEW",   true));
+        permissions.add(perm("EMPLOYEE", "USERS",      "VIEW",   true));
 
-        // ── EMPLOYEE ────────────────────────────────────────────────────────────
-        permissions.add(perm("EMPLOYEE", "/api/inventory/my-branch",  "GET",   true));
-        permissions.add(perm("EMPLOYEE", "/api/inventory/low-stock",  "GET",   true));
-        permissions.add(perm("EMPLOYEE", "/api/inventory/stock",      "POST",  true));
-        permissions.add(perm("EMPLOYEE", "/api/branches/active",      "GET",   true));
-        permissions.add(perm("EMPLOYEE", "/api/products/**",          "GET",   true));
-        permissions.add(perm("EMPLOYEE", "/api/products/**",          "POST",  true));
-        permissions.add(perm("EMPLOYEE", "/api/products/**",          "PUT",   true));
-        permissions.add(perm("EMPLOYEE", "/api/categories/**",        "GET",   true));
-        permissions.add(perm("EMPLOYEE", "/api/orders/admin/**",      "GET",   true));
-        permissions.add(perm("EMPLOYEE", "/api/orders/**",            "PATCH", true));  // ← status update
-        permissions.add(perm("EMPLOYEE", "/api/users/me",             "GET",   true));
-        permissions.add(perm("EMPLOYEE", "/api/users/profile",        "GET",   true));
-
-        // ── CUSTOMER ────────────────────────────────────────────────────────────
-        permissions.add(perm("CUSTOMER", "/api/products/**",      "GET",    true));
-        permissions.add(perm("CUSTOMER", "/api/categories/**",    "GET",    true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",          "GET",    true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",          "POST",   true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",          "PUT",    true));
-        permissions.add(perm("CUSTOMER", "/api/cart/**",          "DELETE", true));
-        permissions.add(perm("CUSTOMER", "/api/orders/checkout",  "POST",   true));
-        permissions.add(perm("CUSTOMER", "/api/orders/{id}",      "GET",    true));
-        permissions.add(perm("CUSTOMER", "/api/users/me",         "GET",    true));
-        permissions.add(perm("CUSTOMER", "/api/users/profile",    "GET",    true));
-        permissions.add(perm("CUSTOMER", "/api/locations/**",     "GET",    true));
+        // ── CUSTOMER ──────────────────────────────────────────────────────────
+        permissions.add(perm("CUSTOMER", "PRODUCTS",   "VIEW",   true));
+        permissions.add(perm("CUSTOMER", "CATEGORIES", "VIEW",   true));
+        permissions.add(perm("CUSTOMER", "CART",       "VIEW",   true));
+        permissions.add(perm("CUSTOMER", "CART",       "CREATE", true));
+        permissions.add(perm("CUSTOMER", "CART",       "EDIT",   true));
+        permissions.add(perm("CUSTOMER", "CART",       "DELETE", true));
+        permissions.add(perm("CUSTOMER", "ORDERS",     "CREATE", true));
+        permissions.add(perm("CUSTOMER", "ORDERS",     "VIEW",   true));
+        permissions.add(perm("CUSTOMER", "USERS",      "VIEW",   true));
+        permissions.add(perm("CUSTOMER", "LOCATIONS",  "VIEW",   true));
 
         rolePermissionRepository.saveAll(permissions);
         System.out.println("[DataSeeder] Seeded " + permissions.size() + " permission entries.");
     }
 
     /** Helper to build a RolePermission without needing an id. */
-    private RolePermission perm(String role, String endpoint, String method, boolean allowed) {
+    private RolePermission perm(String role, String module, String action, boolean allowed) {
         RolePermission rp = new RolePermission();
         rp.setRole(role);
-        rp.setEndpoint(endpoint);
-        rp.setHttpMethod(method);
+        rp.setModule(module);
+        rp.setAction(action);
         rp.setAllowed(allowed);
         return rp;
     }

@@ -19,9 +19,6 @@ export interface EmployeeDetail {
   // UI state
   showPasswordReset?: boolean;
   newPassword?: string;
-  permissionsExpanded?: boolean;
-  permissions?: RolePermissionRow[];
-  permissionsLoading?: boolean;
   saveSuccess?: string;
   saveError?: string;
   pwSuccess?: string;
@@ -31,10 +28,24 @@ export interface EmployeeDetail {
 export interface RolePermissionRow {
   id: number;
   role: string;
-  endpoint: string;
-  httpMethod: string;
+  module: string;
+  action: string;
   allowed: boolean;
   toggling?: boolean;
+}
+
+export interface MatrixCell {
+  module: string;
+  action: string;
+  allowed: boolean;
+  toggling: boolean;
+}
+
+export interface ModuleActionEntry {
+  httpMethod: string;
+  uriPattern: string;
+  module: string;
+  action: string;
 }
 
 @Component({
@@ -55,8 +66,12 @@ export class RoleDefinitionComponent implements OnInit {
   loading = false;
   globalError = '';
 
-  // Cache: role → permissions (shared for all employees of same role)
-  private permCache: Record<string, RolePermissionRow[]> = {};
+  allModules: string[] = [];
+  allActions: string[] = [];
+  private matrixCache: Record<string, MatrixCell[]> = {};
+  expandedRole: string | null = null;
+  currentMatrix: MatrixCell[] = [];
+  matrixLoading: boolean = false;
 
   constructor(
     private http: HttpClient,
@@ -68,6 +83,7 @@ export class RoleDefinitionComponent implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.loadEmployees();
+      this.loadModuleRegistry();
     }
   }
 
@@ -88,9 +104,6 @@ export class RoleDefinitionComponent implements OnInit {
             ...e,
             showPasswordReset: false,
             newPassword: '',
-            permissionsExpanded: false,
-            permissions: [],
-            permissionsLoading: false,
             saveSuccess: '', saveError: '', pwSuccess: '', pwError: ''
           }));
           // Build role filter tabs
@@ -106,6 +119,20 @@ export class RoleDefinitionComponent implements OnInit {
           this.cdr.detectChanges();
         }
       });
+  }
+
+  private loadModuleRegistry(): void {
+    this.http.get<ModuleActionEntry[]>(
+      `${environment.apiUrl}/api/role-permissions/modules`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.allModules = [...new Set(data.map(e => e.module))].sort();
+        this.allActions = ['VIEW', 'CREATE', 'EDIT', 'DELETE'].filter(a => data.some(e => e.action === a));
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
   }
 
   // ── Filters ──────────────────────────────────────────────────────────────
@@ -198,74 +225,83 @@ export class RoleDefinitionComponent implements OnInit {
     });
   }
 
-  // ── Permissions (lazy per role) ───────────────────────────────────────────
+  // ── Permissions matrix (per role) ────────────────────────────────────────
 
-  togglePermissions(emp: EmployeeDetail): void {
-    emp.permissionsExpanded = !emp.permissionsExpanded;
-
-    if (emp.permissionsExpanded && emp.permissions!.length === 0) {
-      // Check cache first
-      if (this.permCache[emp.role]) {
-        emp.permissions = this.deepCopyPerms(this.permCache[emp.role]);
-        this.cdr.detectChanges();
-        return;
-      }
-      emp.permissionsLoading = true;
-      this.cdr.detectChanges();
-
-      this.http.get<RolePermissionRow[]>(
-        `${environment.apiUrl}/api/permissions/role/${emp.role}`,
-        { headers: this.headers() }
-      ).subscribe({
-        next: (perms) => {
-          this.permCache[emp.role] = perms;
-          // Share same data among all cards of same role
-          this.employees
-            .filter(e => e.role === emp.role && e.permissions!.length === 0)
-            .forEach(e => e.permissions = this.deepCopyPerms(perms));
-          emp.permissionsLoading = false;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          emp.permissionsLoading = false;
-          this.cdr.detectChanges();
-        }
-      });
+  toggleRoleMatrix(role: string): void {
+    if (this.expandedRole === role) {
+      this.expandedRole = null;
+      this.currentMatrix = [];
+      return;
     }
-    this.cdr.detectChanges();
-  }
+    this.expandedRole = role;
 
-  togglePermissionRow(emp: EmployeeDetail, perm: RolePermissionRow): void {
-    if (perm.toggling) return;
-    perm.toggling = true;
+    if (this.matrixCache[role]) {
+      this.currentMatrix = this.deepCopyMatrix(this.matrixCache[role]);
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.matrixLoading = true;
     this.cdr.detectChanges();
 
-    this.http.put<RolePermissionRow>(
-      `${environment.apiUrl}/api/permissions/${perm.id}/toggle`,
-      {},
+    this.http.get<RolePermissionRow[]>(
+      `${environment.apiUrl}/api/role-permissions/matrix?role=${role}`,
       { headers: this.headers() }
     ).subscribe({
-      next: (updated) => {
-        perm.allowed = updated.allowed;
-        perm.toggling = false;
-        // Update cache + all same-role employees
-        if (this.permCache[emp.role]) {
-          const cached = this.permCache[emp.role].find(p => p.id === perm.id);
-          if (cached) cached.allowed = updated.allowed;
+      next: (rows) => {
+        const cells: MatrixCell[] = [];
+        for (const module of this.allModules) {
+          for (const action of this.allActions) {
+            const match = rows.find(r => r.module === module && r.action === action);
+            cells.push({ module, action, allowed: match ? match.allowed === true : false, toggling: false });
+          }
         }
-        this.employees
-          .filter(e => e.role === emp.role)
-          .forEach(e => {
-            const p = e.permissions?.find(x => x.id === perm.id);
-            if (p) p.allowed = updated.allowed;
-          });
+        this.matrixCache[role] = cells;
+        this.currentMatrix = this.deepCopyMatrix(cells);
+        this.matrixLoading = false;
         this.cdr.detectChanges();
       },
       error: () => {
-        perm.toggling = false;
+        this.matrixLoading = false;
         this.cdr.detectChanges();
       }
     });
+  }
+
+  toggleMatrixCell(cell: MatrixCell): void {
+    if (cell.toggling || !this.expandedRole) return;
+    cell.toggling = true;
+    this.cdr.detectChanges();
+
+    this.http.put(
+      `${environment.apiUrl}/api/role-permissions/matrix`,
+      { role: this.expandedRole, module: cell.module, action: cell.action, allowed: !cell.allowed },
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        cell.allowed = !cell.allowed;
+        cell.toggling = false;
+        if (this.matrixCache[this.expandedRole!]) {
+          const cached = this.matrixCache[this.expandedRole!].find(
+            c => c.module === cell.module && c.action === cell.action
+          );
+          if (cached) cached.allowed = cell.allowed;
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        cell.toggling = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  deepCopyMatrix(cells: MatrixCell[]): MatrixCell[] {
+    return cells.map(c => ({ ...c, toggling: false }));
+  }
+
+  getCell(module: string, action: string): MatrixCell | undefined {
+    return this.currentMatrix.find(c => c.module === module && c.action === action);
   }
 
   @Output() tabChange = new EventEmitter<string>();
@@ -273,16 +309,10 @@ export class RoleDefinitionComponent implements OnInit {
   // ── Navigation ────────────────────────────────────────────────────────────
 
   goToCreateRole(): void {
-    // Emit event to parent instead of using router
-    // This works reliably every single time regardless of current URL
     this.tabChange.emit('create-role');
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-
-  private deepCopyPerms(perms: RolePermissionRow[]): RolePermissionRow[] {
-    return perms.map(p => ({ ...p, toggling: false }));
-  }
 
   getRoleBadgeClass(role: string): string {
     switch (role) {

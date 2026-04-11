@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.dto.AddToCartRequest;
 import com.jivRas.groceries.dto.CartResponse;
 import com.jivRas.groceries.dto.UpdateCartRequest;
@@ -36,6 +37,7 @@ public class CartController {
      * Add a product to the cart.
      * Logged-in users are identified by JWT; guests must send X-Guest-Id header.
      */
+    @ModuleAction(module = "CART", action = "CREATE")
     @PostMapping("/add")
     public ResponseEntity<CartResponse> addToCart(
             @Valid @RequestBody AddToCartRequest request,
@@ -48,6 +50,7 @@ public class CartController {
     /**
      * Get the current cart.
      */
+    @ModuleAction(module = "CART", action = "VIEW")
     @GetMapping
     public ResponseEntity<CartResponse> getCart(
             @RequestHeader(value = "X-Guest-Id", required = false) String guestId) {
@@ -59,6 +62,7 @@ public class CartController {
     /**
      * Update the quantity of a specific cart item.
      */
+    @ModuleAction(module = "CART", action = "EDIT")
     @PutMapping("/update/{itemId}")
     public ResponseEntity<CartResponse> updateCartItem(
             @PathVariable Long itemId,
@@ -72,6 +76,7 @@ public class CartController {
     /**
      * Remove a single item from the cart.
      */
+    @ModuleAction(module = "CART", action = "DELETE")
     @DeleteMapping("/{itemId}")
     public ResponseEntity<CartResponse> removeCartItem(
             @PathVariable Long itemId,

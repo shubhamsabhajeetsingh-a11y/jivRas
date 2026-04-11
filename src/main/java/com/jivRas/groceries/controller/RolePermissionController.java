@@ -4,15 +4,16 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
+import com.jivRas.groceries.config.ModuleActionScanner;
+import com.jivRas.groceries.config.ModuleActionScanner.ModuleActionEntry;
 import com.jivRas.groceries.dto.RolePermissionRequest;
 import com.jivRas.groceries.entity.RolePermission;
 import com.jivRas.groceries.repository.RolePermissionRepository;
@@ -22,181 +23,121 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * CRUD API for managing role-permission entries at runtime.
+ * Admin API for managing the role+module+action permission matrix.
  *
- * <p><strong>Security:</strong> All endpoints here are bootstrapped — they
- * CANNOT use the DB-driven {@link DynamicAuthorizationService} to protect
- * themselves (that would be circular). Instead they perform a direct JWT role
- * check ({@code ROLE_ADMIN}) from the Spring Security {@link Authentication}
- * object, which is always populated by {@code JwtAuthFilter} before this
- * controller runs.
+ * <p><strong>Security:</strong> These endpoints are bootstrapped — they CANNOT
+ * use the DB-driven {@link DynamicAuthorizationService} to protect themselves
+ * (that would be circular). Instead they perform a direct JWT role check
+ * ({@code ROLE_ADMIN}) from the Spring Security {@link Authentication} object,
+ * which is always populated by {@code JwtAuthFilter} before this controller runs.
  */
 @RestController
-@RequestMapping("/api/permissions")
+@RequestMapping("/api/role-permissions")
 @RequiredArgsConstructor
 public class RolePermissionController {
 
     private final RolePermissionRepository rolePermissionRepository;
     private final DynamicAuthorizationService dynamicAuthorizationService;
+    private final ModuleActionScanner moduleActionScanner;
 
-    // ──────────────────────── Admin guard helper ────────────────────────────
+    // ── Admin guard ──────────────────────────────────────────────────────────
 
-    /**
-     * Direct JWT-based ADMIN check. Returns {@code true} if the Authentication
-     * contains the {@code ROLE_ADMIN} authority.
-     * Uses Spring Security context (populated by JwtAuthFilter) — no DB call.
-     */
     private boolean isAdmin(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
+        if (authentication == null || !authentication.isAuthenticated()) return false;
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())
                             || "ADMIN".equals(a.getAuthority()));
     }
 
-    // ──────────────────────── GET /api/permissions ──────────────────────────
+    // ── GET /api/role-permissions/matrix?role=EMPLOYEE ───────────────────────
 
     /**
-     * List all role-permission entries.
+     * Returns all module+action permission rows for the requested role.
      * ADMIN only.
      */
-    @GetMapping
-    public ResponseEntity<?> listAll(Authentication authentication) {
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body("Access denied: ADMIN only");
-        }
-        List<RolePermission> all = rolePermissionRepository.findAll();
-        return ResponseEntity.ok(all);
-    }
-
-    // ──────────────────────── POST /api/permissions ─────────────────────────
-
-    /**
-     * Add a new permission rule.
-     * ADMIN only.
-     */
-    @PostMapping
-    public ResponseEntity<?> addPermission(
-            @Valid @RequestBody RolePermissionRequest request,
+    @ModuleAction(module = "ROLE_MANAGEMENT", action = "VIEW")
+    @GetMapping("/matrix")
+    public ResponseEntity<?> getMatrix(
+            @RequestParam String role,
             Authentication authentication) {
 
         if (!isAdmin(authentication)) {
             return ResponseEntity.status(403).body("Access denied: ADMIN only");
         }
 
-        RolePermission rp = new RolePermission();
-        rp.setRole(request.getRole().toUpperCase());
-        rp.setEndpoint(request.getEndpoint());
-        rp.setHttpMethod(request.getHttpMethod().toUpperCase());
-        rp.setAllowed(request.isAllowed());
-
-        RolePermission saved = rolePermissionRepository.save(rp);
-
-        // Bust the cache so the new rule takes effect immediately
-        dynamicAuthorizationService.evictPermissionCache();
-
-        return ResponseEntity.ok(saved);
-    }
-
-    // ──────────────────────── PUT /api/permissions/{id} ─────────────────────
-
-    /**
-     * Update an existing permission rule by ID.
-     * ADMIN only.
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updatePermission(
-            @PathVariable Long id,
-            @Valid @RequestBody RolePermissionRequest request,
-            Authentication authentication) {
-
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body("Access denied: ADMIN only");
-        }
-
-        return rolePermissionRepository.findById(id)
-                .map(existing -> {
-                    existing.setRole(request.getRole().toUpperCase());
-                    existing.setEndpoint(request.getEndpoint());
-                    existing.setHttpMethod(request.getHttpMethod().toUpperCase());
-                    existing.setAllowed(request.isAllowed());
-                    RolePermission updated = rolePermissionRepository.save(existing);
-                    dynamicAuthorizationService.evictPermissionCache();
-                    return ResponseEntity.ok((Object) updated);
-                })
-                .orElseGet(() -> ResponseEntity.status(404)
-                        .body("Permission with id=" + id + " not found"));
-    }
-
-    // ──────────────────────── DELETE /api/permissions/{id} ──────────────────
-
-    /**
-     * Remove a permission rule by ID.
-     * ADMIN only.
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePermission(
-            @PathVariable Long id,
-            Authentication authentication) {
-
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body("Access denied: ADMIN only");
-        }
-
-        if (!rolePermissionRepository.existsById(id)) {
-            return ResponseEntity.status(404).body("Permission with id=" + id + " not found");
-        }
-
-        rolePermissionRepository.deleteById(id);
-        dynamicAuthorizationService.evictPermissionCache();
-        return ResponseEntity.ok("Permission deleted successfully");
-    }
-
-    // ──────────────────────── GET /api/permissions/role/{roleName} ───────────
-
-    /**
-     * List all permission entries for a specific role.
-     * Used by the Role Definition tab to lazily load permissions per role.
-     * ADMIN only.
-     */
-    @GetMapping("/role/{roleName}")
-    public ResponseEntity<?> getPermissionsByRole(
-            @PathVariable String roleName,
-            Authentication authentication) {
-
-        if (!isAdmin(authentication)) {
-            return ResponseEntity.status(403).body("Access denied: ADMIN only");
-        }
-
-        List<RolePermission> permissions = rolePermissionRepository.findByRole(roleName.toUpperCase());
+        List<RolePermission> permissions = rolePermissionRepository.findByRole(role.toUpperCase());
         return ResponseEntity.ok(permissions);
     }
 
-    // ──────────────────────── PUT /api/permissions/{id}/toggle ──────────────
+    // ── PUT /api/role-permissions/matrix ─────────────────────────────────────
 
     /**
-     * Toggle the isAllowed boolean on a single permission entry.
-     * Used by the inline toggles in the Role Definition permissions table.
+     * Upsert a single role+module+action permission row.
+     * If the row already exists it is updated; otherwise a new one is inserted.
      * ADMIN only.
      */
-    @PutMapping("/{id}/toggle")
-    public ResponseEntity<?> togglePermission(
-            @PathVariable Long id,
+    @ModuleAction(module = "ROLE_MANAGEMENT", action = "EDIT")
+    @PutMapping("/matrix")
+    public ResponseEntity<?> upsertMatrix(
+            @Valid @RequestBody RolePermissionRequest request,
             Authentication authentication) {
 
         if (!isAdmin(authentication)) {
             return ResponseEntity.status(403).body("Access denied: ADMIN only");
         }
 
-        return rolePermissionRepository.findById(id)
-                .map(rp -> {
-                    rp.setAllowed(!rp.isAllowed());
-                    RolePermission saved = rolePermissionRepository.save(rp);
-                    dynamicAuthorizationService.evictPermissionCache();
-                    return ResponseEntity.ok((Object) saved);
-                })
-                .orElseGet(() -> ResponseEntity.status(404)
-                        .body("Permission with id=" + id + " not found"));
+        String role   = request.getRole().toUpperCase();
+        String module = request.getModule().toUpperCase();
+        String action = request.getAction().toUpperCase();
+
+        RolePermission rp = rolePermissionRepository
+                .findByRoleAndModuleAndAction(role, module, action)
+                .orElseGet(RolePermission::new);
+
+        rp.setRole(role);
+        rp.setModule(module);
+        rp.setAction(action);
+        rp.setAllowed(request.isAllowed());
+
+        RolePermission saved = rolePermissionRepository.save(rp);
+        dynamicAuthorizationService.evictPermissionCache();
+        return ResponseEntity.ok(saved);
+    }
+
+    // ── GET /api/role-permissions/modules ────────────────────────────────────
+
+    /**
+     * Returns the distinct list of all modules discovered from
+     * {@link ModuleActionScanner}'s registry (i.e. from @ModuleAction annotations).
+     * Useful for building the admin permission matrix UI.
+     * ADMIN only.
+     */
+    @ModuleAction(module = "ROLE_MANAGEMENT", action = "VIEW")
+    @GetMapping("/modules")
+    public ResponseEntity<?> getModules(Authentication authentication) {
+
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(403).body("Access denied: ADMIN only");
+        }
+
+        return ResponseEntity.ok(moduleActionScanner.getRegistry());
+    }
+
+    // ── GET /api/role-permissions/roles ──────────────────────────────────────
+
+    /**
+     * Returns distinct roles that have at least one permission entry in the DB.
+     * ADMIN only.
+     */
+    @ModuleAction(module = "ROLE_MANAGEMENT", action = "VIEW")
+    @GetMapping("/roles")
+    public ResponseEntity<?> getRoles(Authentication authentication) {
+
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(403).body("Access denied: ADMIN only");
+        }
+
+        List<String> roles = rolePermissionRepository.findDistinctRoles();
+        return ResponseEntity.ok(roles);
     }
 }

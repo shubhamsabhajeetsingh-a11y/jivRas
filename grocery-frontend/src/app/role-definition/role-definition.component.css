@@ -433,15 +433,15 @@
   color: var(--text-muted);
 }
 
-.rdc-perms-table {
+.rdc-matrix-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 13px;
   margin-bottom: 10px;
 }
 
-.rdc-perms-table thead th {
-  text-align: left;
+.rdc-matrix-table thead th {
+  text-align: center;
   padding: 8px 10px;
   font-size: 10.5px;
   font-weight: 700;
@@ -453,53 +453,50 @@
   font-family: 'Syne', sans-serif;
 }
 
-.rdc-perms-table tbody tr { border-bottom: 1px solid var(--border); }
-.rdc-perms-table tbody tr:last-child { border-bottom: none; }
-.rdc-perms-table tbody tr:hover { background: var(--bg); }
-.rdc-perms-table tbody td { padding: 8px 10px; vertical-align: middle; }
-
-.perm-endpoint {
-  font-family: 'DM Mono', 'Courier New', monospace;
-  font-size: 12px;
-  color: var(--text);
-  word-break: break-all;
+.rdc-matrix-table thead th:first-child {
+  text-align: left;
 }
 
-.perm-method {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10.5px;
-  font-weight: 700;
-  font-family: 'Syne', sans-serif;
-  letter-spacing: 0.05em;
+.rdc-matrix-table tbody td {
+  text-align: center;
+  padding: 6px 10px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
 }
 
-.method-get    { background: #D1FAE5; color: #065F46; }
-.method-post   { background: #DBEAFE; color: #1D4ED8; }
-.method-put    { background: #FEF3C7; color: #92400E; }
-.method-delete { background: #FEE2E2; color: #991B1B; }
-.method-patch  { background: #EDE9FE; color: #5B21B6; }
-.method-\*     { background: #F3F4F6; color: #374151; }
-
-.perm-toggle {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+.matrix-module {
   font-weight: 600;
-  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  text-transform: capitalize;
+  padding: 10px;
+  text-align: left;
+}
+
+.matrix-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   border: none;
-  transition: opacity 0.15s, transform 0.1s;
-  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  font-size: 16px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  margin: 0 auto;
+  transition: all 0.15s;
 }
 
-.perm-toggle.allowed { background: var(--green-light); color: var(--green); }
-.perm-toggle.denied  { background: var(--red-light); color: var(--red); }
-.perm-toggle:hover:not(:disabled) { opacity: 0.8; transform: scale(0.97); }
-.perm-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
+.matrix-toggle.allowed { background: var(--green-light); color: var(--green); }
+.matrix-toggle.denied  { background: var(--red-light); color: var(--red); }
+.matrix-toggle:hover:not(:disabled) { opacity: 0.75; transform: scale(0.93); }
+.matrix-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.matrix-na {
+  text-align: center;
+  color: var(--border);
+  font-size: 18px;
+}
 
 .rdc-perms-warning {
   font-size: 11.5px;

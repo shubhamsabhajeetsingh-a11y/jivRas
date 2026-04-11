@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.dto.BranchRequest;
 import com.jivRas.groceries.dto.BranchResponse;
 import com.jivRas.groceries.service.BranchService;
@@ -30,6 +31,7 @@ public class BranchController {
      * POST /api/branches
      * ADMIN only — create a new branch.
      */
+    @ModuleAction(module = "BRANCHES", action = "CREATE")
     @PostMapping
     public ResponseEntity<?> createBranch(
             @RequestBody BranchRequest request,
@@ -47,6 +49,7 @@ public class BranchController {
      * GET /api/branches/active
      * Returns all active branches. Used by dashboard branch dropdown.
      */
+    @ModuleAction(module = "BRANCHES", action = "VIEW")
     @GetMapping("/active")
     public ResponseEntity<?> getAllActiveBranches(
             HttpServletRequest httpRequest,

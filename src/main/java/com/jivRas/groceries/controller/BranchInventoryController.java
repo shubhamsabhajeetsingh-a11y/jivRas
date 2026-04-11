@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.dto.BranchInventoryRequest;
 import com.jivRas.groceries.dto.BranchInventoryResponse;
 import com.jivRas.groceries.dto.BulkStockUpdateRequest;
@@ -42,6 +43,7 @@ public class BranchInventoryController {
      * Reads the branchId from the employee's own profile (not from JWT claim).
      * This ensures the employee can ONLY see their own branch.
      */
+    @ModuleAction(module = "INVENTORY", action = "VIEW")
     @GetMapping("/my-branch")
     public ResponseEntity<?> getMyBranchInventory(
             Principal principal,
@@ -76,6 +78,7 @@ public class BranchInventoryController {
      *
      * For ADMIN only — can view any branch's inventory.
      */
+    @ModuleAction(module = "INVENTORY", action = "VIEW")
     @GetMapping("/branch/{branchId}")
     public ResponseEntity<?> getBranchInventory(
             @PathVariable Long branchId,
@@ -97,6 +100,7 @@ public class BranchInventoryController {
      * Add or update stock for a branch+product.
      * ADMIN can update any branch. EMPLOYEE/BRANCH_MANAGER can only update their own branch.
      */
+    @ModuleAction(module = "INVENTORY", action = "CREATE")
     @PostMapping("/stock")
     public ResponseEntity<?> addOrUpdateStock(
             @RequestBody BranchInventoryRequest request,
@@ -125,6 +129,7 @@ public class BranchInventoryController {
         return ResponseEntity.ok(response);
     }
 
+    @ModuleAction(module = "INVENTORY", action = "EDIT")
     @PutMapping("/bulk-update")
     public ResponseEntity<?> bulkUpdate(
             @RequestBody BulkStockUpdateRequest request,
@@ -141,6 +146,7 @@ public class BranchInventoryController {
         return ResponseEntity.ok(response);
     }
 
+    @ModuleAction(module = "INVENTORY", action = "CREATE")
     @PostMapping("/transfer")
     public ResponseEntity<?> transfer(
             @RequestBody StockTransferRequest request,
@@ -152,7 +158,7 @@ public class BranchInventoryController {
         System.out.println("====== TRANSFER CALLED ======");
         System.out.println("Role: " + role);
         System.out.println("URI: " + httpRequest.getRequestURI());
-        
+
         if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
             System.out.println("Access denied by DynamicAuthorizationService");
             return ResponseEntity.status(403).body(java.util.Map.of("error", "Access denied"));

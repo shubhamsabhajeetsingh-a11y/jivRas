@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.entity.Product;
 import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.ProductService;
@@ -31,6 +32,7 @@ public class ProductController {
     private final DynamicAuthorizationService dynamicAuthorizationService;
 
     /** Add new product — roles per DB permissions (all non-CUSTOMER). */
+    @ModuleAction(module = "PRODUCTS", action = "CREATE")
     @PostMapping
     public ResponseEntity<?> addProduct(
             @RequestBody Product product,
@@ -45,6 +47,7 @@ public class ProductController {
     }
 
     /** Update product — roles per DB permissions. */
+    @ModuleAction(module = "PRODUCTS", action = "EDIT")
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProduct(
             @PathVariable Long id,
@@ -60,6 +63,7 @@ public class ProductController {
     }
 
     /** Upload product image — roles per DB permissions. */
+    @ModuleAction(module = "PRODUCTS", action = "EDIT")
     @PostMapping("/{id}/image")
     public ResponseEntity<?> uploadImage(
             @PathVariable Long id,
@@ -76,6 +80,7 @@ public class ProductController {
     }
 
     /** Delete product — roles per DB permissions. */
+    @ModuleAction(module = "PRODUCTS", action = "DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteProduct(
             @PathVariable Long id,
@@ -91,12 +96,14 @@ public class ProductController {
     }
 
     /** Get all products (including inactive) — public. */
+    @ModuleAction(module = "PRODUCTS", action = "VIEW")
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
         return ResponseEntity.ok(productService.findAll());
     }
 
     /** Get active products only — public. */
+    @ModuleAction(module = "PRODUCTS", action = "VIEW")
     @GetMapping("/active")
     public ResponseEntity<List<Product>> getActiveProducts() {
         return ResponseEntity.ok(productService.findActive());

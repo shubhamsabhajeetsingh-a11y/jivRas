@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Read(//e/JivRas/groceries\\(2\\)/groceries/**)"
+    ],
+    "additionalDirectories": [
+      "e:\\JivRas\\groceries(2)\\groceries\\src\\main\\java\\com\\jivRas\\groceries\\entity",
+      "e:\\JivRas\\groceries(2)\\groceries\\src\\main\\java\\com\\jivRas\\groceries\\repository",
+      "e:\\JivRas\\groceries(2)\\groceries\\src\\main\\java\\com\\jivRas\\groceries\\controller",
+      "e:\\JivRas\\groceries(2)\\groceries"
     ]
   }
 }

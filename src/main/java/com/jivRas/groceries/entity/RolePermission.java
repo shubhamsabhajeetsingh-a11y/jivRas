@@ -11,8 +11,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Stores which HTTP method + endpoint path each role is allowed to access.
- * Endpoints may use /** wildcards (e.g. /api/inventory/**).
+ * Stores which module+action each role is allowed to perform.
+ *
+ * <p>The logical module/action pair is resolved from an incoming HTTP request by
+ * {@link com.jivRas.groceries.config.ModuleActionScanner} using the
+ * {@link com.jivRas.groceries.annotation.ModuleAction} annotations placed on
+ * controller methods — no raw endpoints or HTTP methods are stored here.
  */
 @Entity
 @Table(name = "role_permissions")
@@ -25,19 +29,19 @@ public class RolePermission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Role name stored WITHOUT "ROLE_" prefix, e.g. "ADMIN", "EMPLOYEE". */
+    /** Role name stored WITHOUT "ROLE_" prefix, e.g. "EMPLOYEE", "BRANCH_MANAGER". */
     @Column(nullable = false)
     private String role;
 
-    /** Endpoint pattern, supports /** wildcard, e.g. "/api/inventory/**". */
+    /** Logical module, e.g. "INVENTORY", "ORDERS", "PRODUCTS". */
     @Column(nullable = false)
-    private String endpoint;
+    private String module;
 
-    /** HTTP method: GET, POST, PUT, DELETE, PATCH, or * for all. */
+    /** Logical action, e.g. "VIEW", "CREATE", "EDIT", "DELETE". */
     @Column(nullable = false)
-    private String httpMethod;
+    private String action;
 
-    /** Whether this role is permitted to call this endpoint+method combination. */
+    /** Whether this role is permitted to perform this module+action combination. */
     @Column(nullable = false)
     private boolean isAllowed;
 }

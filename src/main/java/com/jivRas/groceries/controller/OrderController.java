@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.dto.CheckoutRequest;
 import com.jivRas.groceries.dto.OrderResponse;
 import com.jivRas.groceries.dto.AdminOrderResponse;
@@ -53,6 +54,7 @@ public class OrderController {
      * Checkout — create an order from the current cart.
      * Open to authenticated users and guests (X-Guest-Id).
      */
+    @ModuleAction(module = "ORDERS", action = "CREATE")
     @PostMapping("/checkout")
     public ResponseEntity<?> checkout(
             @Valid @RequestBody CheckoutRequest request,
@@ -68,6 +70,7 @@ public class OrderController {
      * GET /api/orders/{id}
      * Get order by ID — any authenticated user.
      */
+    @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrder(
             @PathVariable Long id,
@@ -87,6 +90,7 @@ public class OrderController {
      * GET /api/orders/admin/all
      * List all orders — ADMIN and EMPLOYEE only (per DB permissions).
      */
+    @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/admin/all")
     public ResponseEntity<?> getAllOrdersForAdmin(
             HttpServletRequest httpRequest,
@@ -104,6 +108,7 @@ public class OrderController {
      * GET /api/orders/admin/grouped-by-category
      * Orders grouped by product category — ADMIN and EMPLOYEE only.
      */
+    @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/admin/grouped-by-category")
     public ResponseEntity<?> getOrdersGroupedByCategory(
             HttpServletRequest httpRequest,
@@ -122,6 +127,7 @@ public class OrderController {
      * Update order status — ADMIN, EMPLOYEE, and BRANCH_MANAGER (per DB permissions).
      * Called by the Orders dashboard status dropdown.
      */
+    @ModuleAction(module = "ORDERS", action = "EDIT")
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Long id,
@@ -162,6 +168,7 @@ public class OrderController {
      * GET /api/orders/{id}/invoice
      * Generates and downloads a PDF invoice for the given order.
      */
+    @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/{id}/invoice")
     public ResponseEntity<?> downloadInvoice(
             @PathVariable Long id,
@@ -192,6 +199,7 @@ public class OrderController {
      * GET /api/orders/{id}/timeline
      * Returns status change history for an order in chronological order.
      */
+    @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/{id}/timeline")
     public ResponseEntity<?> getOrderTimeline(
             @PathVariable Long id,

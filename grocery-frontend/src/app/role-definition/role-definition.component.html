@@ -104,51 +104,45 @@
           </div>
         </div>
 
-        <!-- Permissions section (lazy) -->
+        <!-- Permissions section (per role, shared matrix) -->
         <div class="rdc-perms-section">
-          <div class="rdc-perms-toggle" (click)="togglePermissions(emp)">
+          <div class="rdc-perms-toggle" (click)="toggleRoleMatrix(emp.role)">
             <span class="rdc-perms-label">Permissions for role: <strong>{{ emp.role }}</strong></span>
-            <svg class="rdc-chevron" [class.expanded]="emp.permissionsExpanded"
+            <svg class="rdc-chevron" [class.expanded]="expandedRole === emp.role"
                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </div>
 
-          <div class="rdc-perms-body" *ngIf="emp.permissionsExpanded">
-            <div *ngIf="emp.permissionsLoading" class="rdc-perms-loading">
+          <div class="rdc-perms-body" *ngIf="expandedRole === emp.role">
+            <div *ngIf="matrixLoading" class="rdc-perms-loading">
               <span class="rd-spinner-sm"></span> Loading permissions…
             </div>
 
-            <div *ngIf="!emp.permissionsLoading && emp.permissions!.length === 0" class="rdc-perms-empty">
-              No permission entries found for {{ emp.role }}.
-            </div>
-
-            <table *ngIf="!emp.permissionsLoading && emp.permissions!.length > 0" class="rdc-perms-table">
+            <table *ngIf="!matrixLoading" class="rdc-matrix-table">
               <thead>
                 <tr>
-                  <th>Endpoint</th>
-                  <th>Method</th>
-                  <th>Allowed</th>
+                  <th>Module</th>
+                  <th *ngFor="let action of allActions">{{ action }}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let p of emp.permissions">
-                  <td class="perm-endpoint">{{ p.endpoint }}</td>
-                  <td>
-                    <span class="perm-method" [ngClass]="'method-' + p.httpMethod.toLowerCase()">
-                      {{ p.httpMethod }}
-                    </span>
-                  </td>
-                  <td>
-                    <button class="perm-toggle"
-                            [class.allowed]="p.allowed"
-                            [class.denied]="!p.allowed"
-                            [disabled]="p.toggling"
-                            (click)="togglePermissionRow(emp, p)"
-                            [title]="p.allowed ? 'Click to deny' : 'Click to allow'">
-                      <span *ngIf="!p.toggling">{{ p.allowed ? '✅ Allowed' : '🚫 Denied' }}</span>
-                      <span *ngIf="p.toggling" class="rd-spinner-sm"></span>
-                    </button>
+                <tr *ngFor="let module of allModules">
+                  <td class="matrix-module">{{ module }}</td>
+                  <td *ngFor="let action of allActions">
+                    <ng-container *ngIf="getCell(module, action) as cell; else naCell">
+                      <button class="matrix-toggle"
+                              [class.allowed]="cell.allowed"
+                              [class.denied]="!cell.allowed"
+                              [disabled]="cell.toggling"
+                              (click)="toggleMatrixCell(cell)">
+                        <span *ngIf="!cell.toggling">{{ cell.allowed ? '✅' : '🚫' }}</span>
+                        <span *ngIf="cell.toggling" class="rd-spinner-sm"></span>
+                      </button>
+                    </ng-container>
+                    <ng-template #naCell>
+                      <span class="matrix-na">—</span>
+                    </ng-template>
                   </td>
                 </tr>
               </tbody>

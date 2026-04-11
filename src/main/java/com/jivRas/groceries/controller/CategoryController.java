@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.entity.Category;
 import com.jivRas.groceries.repository.CategoryRepository;
 import com.jivRas.groceries.service.DynamicAuthorizationService;
@@ -26,12 +27,14 @@ public class CategoryController {
     private final DynamicAuthorizationService dynamicAuthorizationService;
 
     /** Public: anyone can read categories. */
+    @ModuleAction(module = "CATEGORIES", action = "VIEW")
     @GetMapping
     public ResponseEntity<List<Category>> getAllCategories() {
         return ResponseEntity.ok(categoryRepository.findAll());
     }
 
     /** Create category — non-CUSTOMER roles per DB permissions. */
+    @ModuleAction(module = "CATEGORIES", action = "CREATE")
     @PostMapping
     public ResponseEntity<?> createCategory(
             @RequestBody Category category,

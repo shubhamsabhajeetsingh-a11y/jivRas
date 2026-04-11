@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.RsaKeyService;
 
@@ -80,6 +81,8 @@ public class UserController {
         return customerRepository.findByUsernameAndAccountCreatedTrue(username).isPresent() ||
                employeeUserRepository.findByUsername(username).isPresent();
     }
+
+    // ── Auth endpoints — NO @ModuleAction: handled by SecurityConfig.permitAll() ──
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
@@ -142,7 +145,7 @@ public class UserController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
         String username = request.get("username");
-        
+
         // Remove refresh token
         refreshTokenRepository.deleteByUsername(username);
 
@@ -165,21 +168,21 @@ public class UserController {
                         refreshTokenRepository.delete(token);
                         return ResponseEntity.status(401).body("Refresh token has expired");
                     }
-                    
+
                     String username = token.getUsername();
                     String role = "";
                     Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(username);
-                    if(employeeOpt.isPresent()) {
-                    	role = employeeOpt.get().getRole();
+                    if (employeeOpt.isPresent()) {
+                        role = employeeOpt.get().getRole();
                     } else {
-                    	Optional<Customer> customerOpt = customerRepository.findByUsernameAndAccountCreatedTrue(username);
-                    	if(customerOpt.isPresent()) {
-                    		role = customerOpt.get().getRole();
-                    	}
+                        Optional<Customer> customerOpt = customerRepository.findByUsernameAndAccountCreatedTrue(username);
+                        if (customerOpt.isPresent()) {
+                            role = customerOpt.get().getRole();
+                        }
                     }
-                    
-                    if(role.isEmpty()) {
-                    	return ResponseEntity.status(401).body("User not found");
+
+                    if (role.isEmpty()) {
+                        return ResponseEntity.status(401).body("User not found");
                     }
 
                     String newAccessToken = jwtService.generateAccessToken(username, role);
@@ -207,13 +210,11 @@ public class UserController {
         customer.setName(request.getFirstName() + " " + request.getLastName());
         customer.setMobile(request.getMobile());
         customer.setAddressLine(request.getAddress());
-        // For email, we don't have it on Customer entity, we can just skip or add if needed, 
-        // but it's optional in CreateCustomerRequest anyway.
-        
+
         customer.setUsername(request.getUsername());
         customer.setPassword(passwordEncoder.encode(request.getPassword()));
         customer.setRole("CUSTOMER");
-        customer.setAccountCreated(true); // Must use standard lombok setter for boolean isAccountCreated
+        customer.setAccountCreated(true);
 
         customerRepository.save(customer);
         return ResponseEntity.ok("Customer registered successfully");
@@ -222,21 +223,21 @@ public class UserController {
     // Made public so an existing admin is no longer required
     @PostMapping("/register-employee")
     public ResponseEntity<?> registerEmployee(@RequestBody CreateEmployeeRequest request, Principal principal) {
-     
+
         if (usernameExists(request.getUsername())) {
             return ResponseEntity.badRequest().body("Username already exists: " + request.getUsername());
         }
-     
+
         if (request.getEmail() == null || request.getEmail().isBlank()) {
             return ResponseEntity.badRequest().body("Email is mandatory for employee registration");
         }
-     
+
         // Validate that EMPLOYEE and BRANCH_MANAGER must have a branchId
         // ADMIN role doesn't need one (they see all branches)
         if (!request.getRole().equals("ADMIN") && request.getBranchId() == null) {
             return ResponseEntity.badRequest().body("branchId is required for EMPLOYEE and BRANCH_MANAGER roles");
         }
-     
+
         EmployeeUser user = new EmployeeUser();
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -245,33 +246,36 @@ public class UserController {
         user.setEmail(request.getEmail());
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-     
+
         // Set role — "EMPLOYEE", "BRANCH_MANAGER", or "ADMIN"
         user.setRole(request.getRole());
-     
-        // NEW: Assign branchId — links this employee to their branch permanently
+
+        // Assign branchId — links this employee to their branch permanently
         user.setBranchId(request.getBranchId());
-     
+
         // Set who created this account (the logged-in admin/manager)
         user.setCreatedBy(principal != null ? principal.getName() : "SYSTEM");
-     
+
         employeeUserRepository.save(user);
         return ResponseEntity.ok("Employee registered successfully");
     }
 
+    // ── Protected endpoints with @ModuleAction ──────────────────────────────
+
+    @ModuleAction(module = "USERS", action = "VIEW")
     @GetMapping("/me")
     public ResponseEntity<UserProfileDTO> getCurrentUser(Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(401).build();
         }
         String username = principal.getName();
-        
+
         Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(username);
         if (employeeOpt.isPresent()) {
             EmployeeUser emp = employeeOpt.get();
             return ResponseEntity.ok(new UserProfileDTO(emp.getFirstName(), emp.getLastName(), emp.getAddress(), emp.getRole()));
         }
-        
+
         Optional<Customer> customerOpt = customerRepository.findByUsernameAndAccountCreatedTrue(username);
         if (customerOpt.isPresent()) {
             Customer cust = customerOpt.get();
@@ -280,10 +284,11 @@ public class UserController {
             String lastName = names.length > 1 ? names[1] : "";
             return ResponseEntity.ok(new UserProfileDTO(firstName, lastName, cust.getAddressLine(), cust.getRole()));
         }
-        
+
         return ResponseEntity.notFound().build();
     }
-    
+
+    @ModuleAction(module = "USERS", action = "VIEW")
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(Principal principal) {
 
@@ -319,6 +324,7 @@ public class UserController {
      * ADMIN-only: returns distinct assignable roles from the EmployeeUser table,
      * excluding ADMIN (which cannot be assigned via the Create Role form).
      */
+    @ModuleAction(module = "USERS", action = "VIEW")
     @GetMapping("/roles")
     public ResponseEntity<?> getAssignableRoles(
             HttpServletRequest httpRequest,
@@ -340,6 +346,7 @@ public class UserController {
      * GET /api/users/employees
      * ADMIN only — returns all employees (excluding ADMIN) enriched with branchName.
      */
+    @ModuleAction(module = "USERS", action = "VIEW")
     @GetMapping("/employees")
     public ResponseEntity<?> getAllEmployees(
             HttpServletRequest httpRequest,
@@ -378,6 +385,7 @@ public class UserController {
      * PUT /api/users/employees/{id}
      * ADMIN only — update mobile and address of an employee.
      */
+    @ModuleAction(module = "USERS", action = "EDIT")
     @PutMapping("/employees/{id}")
     public ResponseEntity<?> updateEmployee(
             @PathVariable Long id,
@@ -412,6 +420,7 @@ public class UserController {
      * PUT /api/users/employees/{id}/reset-password
      * ADMIN only — BCrypt-encodes and saves a new password.
      */
+    @ModuleAction(module = "USERS", action = "EDIT")
     @PutMapping("/employees/{id}/reset-password")
     public ResponseEntity<?> resetPassword(
             @PathVariable Long id,
@@ -445,5 +454,4 @@ public class UserController {
                 .findFirst()
                 .orElse("");
     }
-
 }
