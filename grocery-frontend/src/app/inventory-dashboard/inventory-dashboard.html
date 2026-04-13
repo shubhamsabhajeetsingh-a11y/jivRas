@@ -95,7 +95,9 @@
          <ng-container *ngIf="activeTab === 'inventory'">Inventory</ng-container>
          <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
          <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
-         <ng-container *ngIf="activeTab === 'create-role'">Create Role</ng-container>
+         <ng-container *ngIf="activeTab === 'create-role'">
+           <button class="create-role-btn" type="button" (click)="openCreateRoleModal()">+ Create Role</button>
+         </ng-container>
          <ng-container *ngIf="activeTab === 'create-branch'">Create Branch</ng-container>
          <ng-container *ngIf="activeTab === 'role-definition'">Role Definition</ng-container>
       </div>
@@ -561,5 +563,64 @@
       <button class="modal-btn" (click)="submitTransfer()" style="background:var(--accent); color:white;">Transfer</button>
     </div>
 
+  </div>
+</div>
+
+<!-- Create Role Modal Overlay -->
+<div class="role-modal-overlay" *ngIf="showCreateRoleModal" (click)="closeCreateRoleModal()">
+  <div class="role-modal" (click)="$event.stopPropagation()">
+
+    <!-- Modal header -->
+    <div class="role-modal-header">
+      <h3>Create New Role</h3>
+      <button class="role-modal-close" type="button" (click)="closeCreateRoleModal()">✕</button>
+    </div>
+
+    <!-- Alerts -->
+    <div *ngIf="roleCreateError" class="role-modal-alert role-modal-alert-error">⚠️ {{ roleCreateError }}</div>
+    <div *ngIf="roleCreateSuccess" class="role-modal-alert role-modal-alert-success">✅ {{ roleCreateSuccess }}</div>
+
+    <!-- Role name input -->
+    <div class="role-modal-field">
+      <label>ROLE NAME</label>
+      <input type="text" [(ngModel)]="newRoleName" placeholder="e.g. DELIVERY_AGENT" class="role-modal-input"
+             (input)="newRoleName = newRoleName.toUpperCase().replace(' ','_')">
+      <span class="role-modal-hint">Uppercase, underscores allowed. e.g. BRANCH_MANAGER</span>
+    </div>
+
+    <!-- Permission matrix -->
+    <div class="role-modal-matrix-wrap">
+      <p class="role-modal-matrix-title">Assign Permissions</p>
+      <table class="role-modal-matrix">
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th *ngFor="let action of roleActions">{{ action }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mod of roleModules">
+            <td class="matrix-mod-name">{{ mod }}</td>
+            <td *ngFor="let act of roleActions" class="matrix-cell-td">
+              <button class="matrix-cell-btn" type="button"
+                      [class.cell-allowed]="getRoleCell(mod, act)?.allowed"
+                      [class.cell-denied]="!getRoleCell(mod, act)?.allowed"
+                      (click)="toggleRoleCell(mod, act)">
+                {{ getRoleCell(mod, act)?.allowed ? '✅' : '—' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="role-modal-footer">
+      <button class="role-modal-cancel" type="button" (click)="closeCreateRoleModal()">Cancel</button>
+      <button class="role-modal-submit" type="button" [disabled]="roleCreating || !newRoleName.trim()" (click)="submitNewRole()">
+        <span *ngIf="!roleCreating">Create Role</span>
+        <span *ngIf="roleCreating">Creating…</span>
+      </button>
+    </div>
   </div>
 </div>

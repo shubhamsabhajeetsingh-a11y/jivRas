@@ -542,3 +542,11 @@
   .rdc-header { flex-direction: column; align-items: flex-start; }
   .rd-create-btn { align-self: stretch; justify-content: center; }
 }
+
+/* Standalone Role Matrix Section */
+.rd-role-matrix-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 20px; overflow: hidden; transition: box-shadow 0.2s; }
+.rd-role-matrix-section:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+.rd-role-matrix-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; cursor: pointer; user-select: none; transition: background 0.15s; font-size: 14px; color: var(--text-muted); }
+.rd-role-matrix-header strong { color: var(--text); }
+.rd-role-matrix-header:hover { background: var(--bg); }
+.rd-role-matrix-body { padding: 0 20px 16px; animation: fadeIn 0.2s ease; }

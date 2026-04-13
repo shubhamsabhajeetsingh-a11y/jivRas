@@ -82,6 +82,93 @@ export class InventoryDashboard implements OnInit {
     this.searchService.setQuery(this.searchQuery, this.activeTab);
   }
 
+  // ── Create Role Modal state ───────────────────────────────────────
+  showCreateRoleModal: boolean = false;
+  newRoleName: string = '';
+  roleModules: string[] = [];
+  roleActions: string[] = [];
+  roleMatrix: { module: string, action: string, allowed: boolean }[] = [];
+  roleCreating: boolean = false;
+  roleCreateError: string = '';
+  roleCreateSuccess: string = '';
+
+  openCreateRoleModal(): void {
+    this.showCreateRoleModal = true;
+    this.newRoleName = '';
+    this.roleCreateError = '';
+    this.roleCreateSuccess = '';
+    
+    this.http.get<any[]>(`${environment.apiUrl}/api/role-permissions/modules`, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (data) => {
+        this.roleModules = [...new Set(data.map(e => e.module))].sort() as string[];
+        this.roleActions = ['VIEW','CREATE','EDIT','DELETE'].filter(a => data.some(e => e.action === a));
+        
+        this.roleMatrix = [];
+        for (const mod of this.roleModules) {
+          for (const act of this.roleActions) {
+            this.roleMatrix.push({ module: mod, action: act, allowed: false });
+          }
+        }
+      },
+      error: (err) => {
+        this.roleCreateError = 'Failed to load permissions registry';
+        console.error(err);
+      }
+    });
+  }
+
+  getRoleCell(module: string, action: string) {
+    return this.roleMatrix.find(p => p.module === module && p.action === action);
+  }
+
+  toggleRoleCell(module: string, action: string): void {
+    const cell = this.getRoleCell(module, action);
+    if (cell) cell.allowed = !cell.allowed;
+  }
+
+  submitNewRole(): void {
+    this.newRoleName = this.newRoleName.trim().toUpperCase();
+    if (!this.newRoleName) return;
+
+    const permissions = this.roleMatrix.filter(p => p.allowed);
+    if (permissions.length === 0) {
+      this.roleCreateError = 'Please select at least one permission.';
+      return;
+    }
+
+    this.roleCreating = true;
+    this.roleCreateError = '';
+
+    const body = {
+      roleName: this.newRoleName,
+      permissions: permissions
+    };
+
+    this.http.post(`${environment.apiUrl}/api/role-permissions/roles`, body, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (res) => {
+        this.roleCreateSuccess = 'Role created!';
+        if (!this.createRoleRoles.includes(this.newRoleName)) {
+          this.createRoleRoles.push(this.newRoleName);
+        }
+        this.roleCreating = false;
+        setTimeout(() => { this.closeCreateRoleModal(); }, 1500);
+      },
+      error: (err) => {
+        this.roleCreating = false;
+        this.roleCreateError = typeof err.error === 'string' ? err.error : 'Failed to create role';
+        console.error(err);
+      }
+    });
+  }
+
+  closeCreateRoleModal(): void {
+    this.showCreateRoleModal = false;
+  }
+
   // ── Create Role form (ADMIN only) ─────────────────────────────────
   createRoleBranches: { id: number; name: string; city: string }[] = [];
   createRoleForm = {

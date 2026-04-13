@@ -37,6 +37,8 @@ public class DataSeeder {
         System.out.println("[DataSeeder] Seeding default role-module-action permissions...");
         List<RolePermission> permissions = new ArrayList<>();
 
+        // These are system default roles. Additional roles can be created via POST /api/role-permissions/roles.
+
         // ── BRANCH_MANAGER ────────────────────────────────────────────────────
         permissions.add(perm("BRANCH_MANAGER", "INVENTORY",  "VIEW",   true));
         permissions.add(perm("BRANCH_MANAGER", "INVENTORY",  "CREATE", true));

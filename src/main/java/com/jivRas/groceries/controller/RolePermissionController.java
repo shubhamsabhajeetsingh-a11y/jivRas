@@ -39,6 +39,7 @@ public class RolePermissionController {
     private final RolePermissionRepository rolePermissionRepository;
     private final DynamicAuthorizationService dynamicAuthorizationService;
     private final ModuleActionScanner moduleActionScanner;
+    private final com.jivRas.groceries.repository.EmployeeUserRepository employeeUserRepository;
 
     // ── Admin guard ──────────────────────────────────────────────────────────
 
@@ -139,5 +140,71 @@ public class RolePermissionController {
 
         List<String> roles = rolePermissionRepository.findDistinctRoles();
         return ResponseEntity.ok(roles);
+    }
+
+    // ── POST /api/role-permissions/roles ──────────────────────────────────────
+
+    @ModuleAction(module = "ROLE_MANAGEMENT", action = "CREATE")
+    @org.springframework.web.bind.annotation.PostMapping("/roles")
+    public ResponseEntity<?> createRole(
+            @Valid @RequestBody com.jivRas.groceries.dto.RoleCreateRequest request,
+            Authentication authentication) {
+
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(403).body("Access denied: ADMIN only");
+        }
+
+        String roleName = request.getRoleName().trim().toUpperCase();
+
+        if (rolePermissionRepository.existsByRole(roleName)) {
+            return ResponseEntity.status(409).body("Role already exists");
+        }
+
+        List<RolePermission> toSave = new java.util.ArrayList<>();
+        for (com.jivRas.groceries.dto.RoleCreateRequest.PermissionEntry entry : request.getPermissions()) {
+            RolePermission rp = new RolePermission();
+            rp.setRole(roleName);
+            rp.setModule(entry.getModule().toUpperCase());
+            rp.setAction(entry.getAction().toUpperCase());
+            rp.setAllowed(entry.isAllowed());
+            toSave.add(rp);
+        }
+
+        List<RolePermission> savedList = rolePermissionRepository.saveAll(toSave);
+        dynamicAuthorizationService.evictPermissionCache();
+
+        return ResponseEntity.status(201).body(java.util.Map.of(
+                "role", roleName,
+                "permissionsCount", savedList.size()
+        ));
+    }
+
+    // ── DELETE /api/role-permissions/roles/{roleName} ─────────────────────────
+
+    @ModuleAction(module = "ROLE_MANAGEMENT", action = "DELETE")
+    @org.springframework.web.bind.annotation.DeleteMapping("/roles/{roleName}")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<?> deleteRole(
+            @org.springframework.web.bind.annotation.PathVariable String roleName,
+            Authentication authentication) {
+
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(403).body("Access denied: ADMIN only");
+        }
+
+        String role = roleName.trim().toUpperCase();
+
+        if (!rolePermissionRepository.existsByRole(role)) {
+            return ResponseEntity.status(404).body("Role not found");
+        }
+
+        if (employeeUserRepository.existsByRole(role)) {
+            return ResponseEntity.status(409).body("Cannot delete role while employees are assigned to it");
+        }
+
+        rolePermissionRepository.deleteAllByRole(role);
+        dynamicAuthorizationService.evictPermissionCache();
+
+        return ResponseEntity.ok(java.util.Map.of("message", "Role deleted"));
     }
 }

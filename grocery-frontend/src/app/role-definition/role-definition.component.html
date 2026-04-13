@@ -45,6 +45,50 @@
       </div>
     </div>
 
+    <!-- Role permission matrix (standalone, for any role including those with no employees) -->
+    <div class="rd-role-matrix-section" *ngIf="activeRoleFilter !== 'All'">
+      <div class="rd-role-matrix-header" (click)="toggleRoleMatrix(activeRoleFilter)">
+        <span>📋 Permissions for role: <strong>{{ activeRoleFilter }}</strong></span>
+        <svg class="rdc-chevron" [class.expanded]="expandedRole === activeRoleFilter"
+             width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+
+      <div class="rd-role-matrix-body" *ngIf="expandedRole === activeRoleFilter">
+        <div *ngIf="matrixLoading" class="rdc-perms-loading">
+          <span class="rd-spinner-sm"></span> Loading permissions…
+        </div>
+        <table *ngIf="!matrixLoading" class="rdc-matrix-table">
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th *ngFor="let act of allActions">{{ act }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let mod of allModules">
+              <td class="matrix-module">{{ mod }}</td>
+              <td *ngFor="let act of allActions" class="matrix-cell-td">
+                <ng-container *ngIf="getCell(mod, act) as cell">
+                  <button class="matrix-toggle"
+                          [class.allowed]="cell.allowed"
+                          [class.denied]="!cell.allowed"
+                          [disabled]="cell.toggling"
+                          (click)="toggleMatrixCell(cell)">
+                    <span *ngIf="!cell.toggling">{{ cell.allowed ? '✅' : '🚫' }}</span>
+                    <span *ngIf="cell.toggling" class="rd-spinner-sm"></span>
+                  </button>
+                </ng-container>
+                <span *ngIf="!getCell(mod, act)" class="matrix-na">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="rdc-perms-warning">⚠️ Changes to permissions affect <strong>ALL employees</strong> with the {{ activeRoleFilter }} role.</p>
+      </div>
+    </div>
+
     <!-- Empty state -->
     <div *ngIf="filteredEmployees.length === 0" class="rd-empty">
       <div class="rd-empty-icon">👥</div>
@@ -104,53 +148,14 @@
           </div>
         </div>
 
-        <!-- Permissions section (per role, shared matrix) -->
+        <!-- Permissions shortcut -->
         <div class="rdc-perms-section">
-          <div class="rdc-perms-toggle" (click)="toggleRoleMatrix(emp.role)">
-            <span class="rdc-perms-label">Permissions for role: <strong>{{ emp.role }}</strong></span>
+          <div class="rdc-perms-toggle" (click)="setRoleFilter(emp.role)">
+            <span class="rdc-perms-label">📋 Permissions for role: <strong>{{ emp.role }}</strong></span>
             <svg class="rdc-chevron" [class.expanded]="expandedRole === emp.role"
                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
-          </div>
-
-          <div class="rdc-perms-body" *ngIf="expandedRole === emp.role">
-            <div *ngIf="matrixLoading" class="rdc-perms-loading">
-              <span class="rd-spinner-sm"></span> Loading permissions…
-            </div>
-
-            <table *ngIf="!matrixLoading" class="rdc-matrix-table">
-              <thead>
-                <tr>
-                  <th>Module</th>
-                  <th *ngFor="let action of allActions">{{ action }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let module of allModules">
-                  <td class="matrix-module">{{ module }}</td>
-                  <td *ngFor="let action of allActions">
-                    <ng-container *ngIf="getCell(module, action) as cell; else naCell">
-                      <button class="matrix-toggle"
-                              [class.allowed]="cell.allowed"
-                              [class.denied]="!cell.allowed"
-                              [disabled]="cell.toggling"
-                              (click)="toggleMatrixCell(cell)">
-                        <span *ngIf="!cell.toggling">{{ cell.allowed ? '✅' : '🚫' }}</span>
-                        <span *ngIf="cell.toggling" class="rd-spinner-sm"></span>
-                      </button>
-                    </ng-container>
-                    <ng-template #naCell>
-                      <span class="matrix-na">—</span>
-                    </ng-template>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <p class="rdc-perms-warning">
-              ⚠️ Changes to permissions affect <strong>ALL employees</strong> with the {{ emp.role }} role.
-            </p>
           </div>
         </div>
 

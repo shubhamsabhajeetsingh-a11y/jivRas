@@ -32,4 +32,10 @@ public interface RolePermissionRepository extends JpaRepository<RolePermission, 
 
     /** Count rows so the seeder can skip if data already exists. */
     long countByRole(String role);
+    
+    /** Checks if any permission rows exist for a role */
+    boolean existsByRole(String role);
+    
+    /** Deletes all permission rows for a specific role */
+    void deleteAllByRole(String role);
 }

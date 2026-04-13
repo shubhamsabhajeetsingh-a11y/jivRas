@@ -15,4 +15,7 @@ public interface EmployeeUserRepository extends JpaRepository<EmployeeUser, Long
 
     /** All employees excluding ADMIN — used by Role Definition tab */
     List<EmployeeUser> findAllByRoleNot(String role);
+    
+    /** Check if any users are assigned to this role */
+    boolean existsByRole(String role);
 }

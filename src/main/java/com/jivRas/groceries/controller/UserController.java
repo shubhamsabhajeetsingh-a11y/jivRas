@@ -42,6 +42,7 @@ import com.jivRas.groceries.repository.BranchRepository;
 import com.jivRas.groceries.repository.CustomerRepository;
 import com.jivRas.groceries.repository.EmployeeUserRepository;
 import com.jivRas.groceries.repository.RefreshTokenRepository;
+import com.jivRas.groceries.repository.RolePermissionRepository;
 
 @RestController
 @RequestMapping("/api/users")
@@ -57,6 +58,7 @@ public class UserController {
     private final DynamicAuthorizationService dynamicAuthorizationService;
     private final BranchRepository branchRepository;
     private final RsaKeyService rsaKeyService;
+    private final RolePermissionRepository rolePermissionRepository;
 
     public UserController(CustomerRepository customerRepository, EmployeeUserRepository employeeUserRepository,
             PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
@@ -64,7 +66,8 @@ public class UserController {
             DaoAuthenticationProvider authenticationProvider, RefreshTokenRepository refreshTokenRepository,
             DynamicAuthorizationService dynamicAuthorizationService,
             BranchRepository branchRepository,
-            RsaKeyService rsaKeyService) {
+            RsaKeyService rsaKeyService,
+            RolePermissionRepository rolePermissionRepository) {
         this.customerRepository = customerRepository;
         this.employeeUserRepository = employeeUserRepository;
         this.passwordEncoder = passwordEncoder;
@@ -75,6 +78,7 @@ public class UserController {
         this.dynamicAuthorizationService = dynamicAuthorizationService;
         this.branchRepository = branchRepository;
         this.rsaKeyService = rsaKeyService;
+        this.rolePermissionRepository = rolePermissionRepository;
     }
 
     private boolean usernameExists(String username) {
@@ -236,6 +240,14 @@ public class UserController {
         // ADMIN role doesn't need one (they see all branches)
         if (!request.getRole().equals("ADMIN") && request.getBranchId() == null) {
             return ResponseEntity.badRequest().body("branchId is required for EMPLOYEE and BRANCH_MANAGER roles");
+        }
+
+        // Validate that the role exists in permissions table (unless SUPER_ADMIN)
+        if (!"SUPER_ADMIN".equals(request.getRole())) {
+            List<com.jivRas.groceries.entity.RolePermission> rolePerms = rolePermissionRepository.findByRole(request.getRole());
+            if (rolePerms == null || rolePerms.isEmpty()) {
+                return ResponseEntity.badRequest().body("Role '" + request.getRole() + "' does not exist. Create the role first via POST /api/role-permissions/roles");
+            }
         }
 
         EmployeeUser user = new EmployeeUser();

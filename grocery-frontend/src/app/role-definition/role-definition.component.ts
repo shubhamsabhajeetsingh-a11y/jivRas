@@ -83,6 +83,7 @@ export class RoleDefinitionComponent implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.loadEmployees();
+      this.loadAllRoles();
       this.loadModuleRegistry();
     }
   }
@@ -108,7 +109,7 @@ export class RoleDefinitionComponent implements OnInit {
           }));
           // Build role filter tabs
           const roles = [...new Set(data.map(e => e.role))].filter(Boolean);
-          this.availableRoles = ['All', ...roles];
+          this.availableRoles = ['All', ...new Set([...this.availableRoles.filter(r => r !== 'All'), ...roles])];
           this.applyFilters();
           this.loading = false;
           this.cdr.detectChanges();
@@ -118,6 +119,18 @@ export class RoleDefinitionComponent implements OnInit {
           this.loading = false;
           this.cdr.detectChanges();
         }
+      });
+  }
+
+  loadAllRoles(): void {
+    this.http.get<string[]>(`${environment.apiUrl}/api/users/roles`, { headers: this.headers() })
+      .subscribe({
+        next: (backendRoles) => {
+          const rolesFromEmployees = this.employees.map(e => e.role);
+          this.availableRoles = ['All', ...new Set([...rolesFromEmployees, ...backendRoles])].filter(Boolean) as string[];
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.error('Failed to load roles for tabs', err)
       });
   }
 
@@ -158,6 +171,19 @@ export class RoleDefinitionComponent implements OnInit {
   setRoleFilter(role: string): void {
     this.activeRoleFilter = role;
     this.applyFilters();
+    if (role !== 'All') {
+      if (this.expandedRole !== role) {
+        this.toggleRoleMatrix(role);
+      }
+      if (isPlatformBrowser(this.platformId)) {
+        setTimeout(() => {
+          document.querySelector('.rd-role-matrix-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    } else {
+      this.expandedRole = null;
+      this.currentMatrix = [];
+    }
   }
 
   // ── Save employee details ─────────────────────────────────────────────────
