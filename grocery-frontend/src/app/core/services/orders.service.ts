@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { PaymentStatus, OrderPaymentTimeline } from '../../models/payment.model';
 
 export interface OrderItemResponse {
   id: number;
@@ -25,6 +26,9 @@ export interface AdminOrderResponse {
   state: string;
   pincode: string;
   items: OrderItemResponse[];
+  latestPaymentStatus?: PaymentStatus | null;
+  paymentDetailsExpanded?: boolean;
+  paymentTimeline?: OrderPaymentTimeline;
 }
 
 @Injectable({

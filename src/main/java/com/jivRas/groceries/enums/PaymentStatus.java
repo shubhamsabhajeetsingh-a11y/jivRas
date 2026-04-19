@@ -15,5 +15,12 @@ public enum PaymentStatus {
     FAILED,
 
     /** Payment was successfully refunded to the customer via Razorpay. */
-    REFUNDED
+    REFUNDED,
+
+    /**
+     * Sentinel value — order exists but has no payment attempts yet (e.g., legacy orders
+     * created before the payment module was introduced).
+     * Never persisted to the DB; only returned inside DTOs.
+     */
+    NOT_APPLICABLE
 }

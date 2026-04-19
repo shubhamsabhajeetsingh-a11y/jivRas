@@ -579,3 +579,152 @@ h2 {
   color: #7a7a7a;
   margin-top: 2px;
 }
+
+/* ── Payment Specific Styles ───────────────────────────────────── */
+
+.payment-failed-kpi {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-failed-kpi:hover {
+  background: #fdecea;
+}
+
+.payment-failed-kpi.active {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.payment-chip {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 8px;
+  display: inline-block;
+}
+
+.payment-paid            { background: #dcfce7; color: #166534; }   /* green */
+.payment-created         { background: #fef3c7; color: #92400e; }   /* amber */
+.payment-failed          { background: #fee2e2; color: #991b1b; }   /* red */
+.payment-refunded        { background: #e0e7ff; color: #3730a3; }   /* indigo */
+.payment-not_applicable  { background: #f3f4f6; color: #6b7280; }   /* grey */
+
+/* Payment Details Expandable Panel */
+.payment-details-panel {
+  padding: 16px 20px;
+  background: #fdfdfd;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.payment-empty {
+  color: #7a7a7a;
+  font-size: 13px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.payment-timeline-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-timeline-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.timeline-row {
+  display: flex;
+  gap: 12px;
+}
+
+.payment-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.dot-created   { background: #f59e0b; }
+.dot-paid      { background: #10b981; }
+.dot-failed    { background: #ef4444; }
+.dot-refunded  { background: #6366f1; }
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding-bottom: 16px;
+  border-left: 2px solid #e0e0e0;
+  padding-left: 16px;
+  margin-left: -17px; /* aligns with center of the 10px dot, -17 = -(12px gap + 10px/2) => wait, 10px dot is in a flex row. So left of dot is 0. Center of dot is 5px. Gap is 12px. Total to left of content is 10 + 12 = 22. To go back to dot center we need -17px from left edge of content. */
+}
+
+.timeline-row:last-child .timeline-content {
+  border-left-color: transparent;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.timeline-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.timeline-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.timeline-time {
+  margin-left: auto;
+  color: #7a7a7a;
+  font-size: 12px;
+  margin-top: 0;
+}
+
+.timeline-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.timeline-meta code {
+  background: #f0f0f0;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.timeline-error {
+  color: #d32f2f;
+  background: #fdecea;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.payment-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+}

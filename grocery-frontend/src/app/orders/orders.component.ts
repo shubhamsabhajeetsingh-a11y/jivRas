@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { OrdersService, AdminOrderResponse } from '../core/services/orders.service';
+import { PaymentService } from '../core/services/payment.service';
+import { PaymentStatus } from '../models/payment.model';
 import { SearchService } from '../core/services/search.service';
 
 @Component({
@@ -31,6 +33,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   // Status/date filters
   filters = { status: '', from: '', to: '' };
+  activePaymentFilter: PaymentStatus | null = null;
+  paymentFailedCount: number = 0;
 
   // Tracks the latest search query emitted by the service
   currentSearchQuery = '';
@@ -52,6 +56,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
   constructor(
     private ordersService: OrdersService,
     private searchService: SearchService,
+    private paymentService: PaymentService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -66,6 +71,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.ordersService.getOrdersGroupedByCategory().subscribe({
       next: (data) => {
         this.allGroupedOrders = data;
+        this.loadPaymentStatusForAll();
         // Apply the current search + filter state to freshly loaded data
         this.applyAllFilters(this.currentSearchQuery);
         this.isLoading = false;
@@ -82,6 +88,31 @@ export class OrdersComponent implements OnInit, OnDestroy {
         }
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  private loadPaymentStatusForAll(): void {
+    this.paymentService.getAllPayments().subscribe(payments => {
+      const statusByOrderId = new Map<number, PaymentStatus>();
+      for (const p of payments) {
+        const existing = statusByOrderId.get(p.orderId);
+        if (!existing) {
+          statusByOrderId.set(p.orderId, p.status);
+        }
+      }
+
+      for (const cat of Object.keys(this.allGroupedOrders)) {
+        for (const order of this.allGroupedOrders[cat]) {
+          order.latestPaymentStatus = statusByOrderId.get(order.orderId) || null;
+        }
+      }
+
+      this.paymentFailedCount = new Set(
+        payments.filter(p => p.status === 'FAILED').map(p => p.orderId)
+      ).size;
+      
+      this.applyAllFilters(this.currentSearchQuery);
+      this.cdr.detectChanges();
     });
   }
 
@@ -106,6 +137,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
       // Status filter
       if (this.filters.status) {
         orders = orders.filter(o => o.orderStatus === this.filters.status);
+      }
+
+      // Payment filter
+      if (this.activePaymentFilter) {
+        orders = orders.filter(o => o.latestPaymentStatus === this.activePaymentFilter);
       }
 
       // Date from
@@ -139,8 +175,14 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   clearFilters(): void {
     this.filters = { status: '', from: '', to: '' };
+    this.activePaymentFilter = null;
     // clearQuery() emits '' → subscription calls applyAllFilters('') automatically
     this.searchService.clearQuery();
+  }
+
+  togglePaymentFilter(status: PaymentStatus): void {
+    this.activePaymentFilter = this.activePaymentFilter === status ? null : status;
+    this.applyAllFilters(this.currentSearchQuery);
   }
 
   // ── KPI stats — always computed from filtered groupedOrders ───────
@@ -174,6 +216,27 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.expandedCategories.has(category)
       ? this.expandedCategories.delete(category)
       : this.expandedCategories.add(category);
+  }
+
+  togglePaymentDetails(order: AdminOrderResponse): void {
+    order.paymentDetailsExpanded = !order.paymentDetailsExpanded;
+    if (order.paymentDetailsExpanded && !order.paymentTimeline) {
+      this.paymentService.getTimelineForOrder(order.orderId).subscribe({
+        next: (timeline) => {
+          order.paymentTimeline = timeline;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          order.paymentTimeline = {
+            orderId: order.orderId,
+            totalAmount: 0,
+            effectiveStatus: 'NOT_APPLICABLE',
+            attempts: []
+          };
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   toggleOrderItems(orderId: number): void {

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { OrderPaymentTimeline, PaymentListItem } from '../../models/payment.model';
 
 // ── DTOs matching the backend PaymentController contract ──────────────────────
 
@@ -49,5 +50,13 @@ export class PaymentService {
       `${this.baseUrl}/verify`,
       payload
     );
+  }
+
+  getTimelineForOrder(orderId: number): Observable<OrderPaymentTimeline> {
+    return this.http.get<OrderPaymentTimeline>(`${this.baseUrl}/by-order/${orderId}`);
+  }
+
+  getAllPayments(): Observable<PaymentListItem[]> {
+    return this.http.get<PaymentListItem[]>(`${this.baseUrl}/list`);
   }
 }

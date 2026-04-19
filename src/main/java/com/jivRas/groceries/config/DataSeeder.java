@@ -156,18 +156,23 @@ public class DataSeeder {
     private List<RolePermission> buildPaymentPermissions() {
         List<RolePermission> list = new ArrayList<>();
 
-        // CUSTOMER: can initiate and verify their own payments
+        // CUSTOMER: can initiate, verify, and view their own payments
         list.add(perm("CUSTOMER",        "PAYMENT", "CREATE", true));
         list.add(perm("CUSTOMER",        "PAYMENT", "VERIFY", true));
+        list.add(perm("CUSTOMER",        "PAYMENT", "VIEW",   true));
 
         // EMPLOYEE: no payment access — payments are customer-initiated only
         list.add(perm("EMPLOYEE",        "PAYMENT", "CREATE", false));
         list.add(perm("EMPLOYEE",        "PAYMENT", "VERIFY", false));
+        list.add(perm("EMPLOYEE",        "PAYMENT", "VIEW",   false));
 
-        // BRANCH_MANAGER: no payment access at this stage
-        // Set to false now; can be changed to true when offline reconciliation is implemented
+        // BRANCH_MANAGER: read-only view for payment health; no initiate/verify
         list.add(perm("BRANCH_MANAGER",  "PAYMENT", "CREATE", false));
         list.add(perm("BRANCH_MANAGER",  "PAYMENT", "VERIFY", false));
+        list.add(perm("BRANCH_MANAGER",  "PAYMENT", "VIEW",   true));
+
+        // GUEST: can create and verify their own payment but cannot use the admin view endpoints
+        list.add(perm("GUEST",           "PAYMENT", "VIEW",   false));
 
         return list;
     }
