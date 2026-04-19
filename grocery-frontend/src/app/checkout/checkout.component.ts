@@ -217,7 +217,8 @@ export class CheckoutComponent implements OnInit {
         this.submitting = false;
         this.cartService.resetCartCount();
         this.cdr.detectChanges();
-        this.router.navigate(['/order-confirmation', order.orderId]);
+        // Phase 3: redirect to payment page — Razorpay modal opens there
+        this.router.navigate(['/payment', order.orderId]);
       },
       error: (err) => {
         this.submitting = false;

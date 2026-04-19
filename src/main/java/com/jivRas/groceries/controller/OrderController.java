@@ -23,11 +23,9 @@ import com.jivRas.groceries.entity.OrderStatusHistory;
 import com.jivRas.groceries.exception.ResourceNotFoundException;
 import com.jivRas.groceries.repository.OrderRepository;
 import com.jivRas.groceries.repository.OrderStatusHistoryRepository;
-import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.InvoiceService;
 import com.jivRas.groceries.service.OrderService;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -45,7 +43,6 @@ public class OrderController {
 
     private final OrderService orderService;
     private final OrderRepository orderRepository;
-    private final DynamicAuthorizationService dynamicAuthorizationService;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final InvoiceService invoiceService;
 
@@ -59,7 +56,6 @@ public class OrderController {
     public ResponseEntity<?> checkout(
             @Valid @RequestBody CheckoutRequest request,
             @RequestHeader(value = "X-Guest-Id", required = false) String guestId,
-            HttpServletRequest httpRequest,
             Authentication authentication) {
 
         String userId = resolveUserId(guestId, authentication);
@@ -72,15 +68,7 @@ public class OrderController {
      */
     @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOrder(
-            @PathVariable Long id,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+    public ResponseEntity<?> getOrder(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
@@ -92,14 +80,7 @@ public class OrderController {
      */
     @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/admin/all")
-    public ResponseEntity<?> getAllOrdersForAdmin(
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+    public ResponseEntity<?> getAllOrdersForAdmin() {
         List<AdminOrderResponse> orders = orderService.getAllOrdersForAdmin();
         return ResponseEntity.ok(orders);
     }
@@ -110,14 +91,7 @@ public class OrderController {
      */
     @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/admin/grouped-by-category")
-    public ResponseEntity<?> getOrdersGroupedByCategory(
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+    public ResponseEntity<?> getOrdersGroupedByCategory() {
         Map<String, List<AdminOrderResponse>> grouped = orderService.getOrdersGroupedByCategory();
         return ResponseEntity.ok(grouped);
     }
@@ -132,13 +106,7 @@ public class OrderController {
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> body,
-            HttpServletRequest httpRequest,
             Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
 
         String newStatus = body.get("status");
         if (newStatus == null || newStatus.isBlank()) {
@@ -170,15 +138,7 @@ public class OrderController {
      */
     @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/{id}/invoice")
-    public ResponseEntity<?> downloadInvoice(
-            @PathVariable Long id,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+    public ResponseEntity<?> downloadInvoice(@PathVariable Long id) {
 
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
@@ -201,15 +161,7 @@ public class OrderController {
      */
     @ModuleAction(module = "ORDERS", action = "VIEW")
     @GetMapping("/{id}/timeline")
-    public ResponseEntity<?> getOrderTimeline(
-            @PathVariable Long id,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+    public ResponseEntity<?> getOrderTimeline(@PathVariable Long id) {
         List<OrderStatusHistory> timeline = orderStatusHistoryRepository.findByOrderIdOrderByChangedAtAsc(id);
         return ResponseEntity.ok(timeline);
     }
@@ -218,7 +170,8 @@ public class OrderController {
 
     private String resolveUserId(String guestId, Authentication auth) {
         if (auth != null && auth.isAuthenticated()
-                && !"anonymousUser".equals(auth.getPrincipal())) {
+                && !"anonymousUser".equals(auth.getPrincipal())
+                && !"guest".equals(auth.getPrincipal())) {
             return auth.getName();
         }
         if (guestId != null && !guestId.isBlank()) {
@@ -226,17 +179,11 @@ public class OrderController {
         }
         Authentication contextAuth = SecurityContextHolder.getContext().getAuthentication();
         if (contextAuth != null && contextAuth.isAuthenticated()
-                && !"anonymousUser".equals(contextAuth.getPrincipal())) {
+                && !"anonymousUser".equals(contextAuth.getPrincipal())
+                && !"guest".equals(contextAuth.getPrincipal())) {
             return contextAuth.getName();
         }
         throw new RuntimeException("Please log in or provide X-Guest-Id header");
     }
 
-    private String resolveRole(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) return "";
-        return authentication.getAuthorities().stream()
-                .map(a -> a.getAuthority())
-                .findFirst()
-                .orElse("");
-    }
 }

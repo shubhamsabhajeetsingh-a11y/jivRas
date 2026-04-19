@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,7 +28,8 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Username of logged-in user, or guest UUID. Nullable for legacy data. */
+    /** Username of logged-in user, or guest UUID. Intentionally nullable — guest orders have no user account. */
+    @Column(nullable = true)
     private String userId;
 
     private double totalAmount;
@@ -47,6 +49,31 @@ public class Order {
     private String city;
     private String state;
     private String pincode;
+
+    /**
+     * Customer's phone number — required for both registered and guest orders.
+     * Used for admin-side phone lookup and guest-to-registered linking.
+     * Column default '' ensures existing rows are not broken during schema update.
+     */
+    @Column(name = "customer_phone", nullable = false, length = 15,
+            columnDefinition = "VARCHAR(15) NOT NULL DEFAULT ''")
+    private String customerPhone;
+
+    /**
+     * Customer's email — optional. Registered users already have this in their User record;
+     * captured here for guest orders to enable order confirmation emails.
+     */
+    @Column(name = "customer_email", length = 100)
+    private String customerEmail;
+
+    /**
+     * True when the order was placed without a user account (guest checkout).
+     * Allows the linking service to migrate guest orders on signup.
+     * Column default false keeps existing rows valid during schema update.
+     */
+    @Column(name = "is_guest", nullable = false,
+            columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private Boolean isGuest = false;
 
     // ──────────── Order Items ────────────
 

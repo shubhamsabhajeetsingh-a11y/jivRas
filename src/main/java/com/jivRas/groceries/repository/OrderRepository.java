@@ -14,6 +14,24 @@ public interface OrderRepository extends JpaRepository<Order, Long>  {
     List<Order> findAllByOrderByOrderDateDesc();
 
     /**
+     * Registered user's full order history, newest first.
+     * Used on the "My Orders" page after the customer logs in.
+     */
+    List<Order> findByUserIdOrderByOrderDateDesc(String userId);
+
+    /**
+     * Admin-side phone number lookup — returns orders for both registered and guest customers
+     * sharing the same phone number, newest first.
+     */
+    List<Order> findByCustomerPhoneOrderByOrderDateDesc(String customerPhone);
+
+    /**
+     * Fetch guest-only orders for a phone number (userId is null = no linked account).
+     * Used by the guest-to-registered linking service during signup to migrate past orders.
+     */
+    List<Order> findByCustomerPhoneAndUserIdIsNull(String customerPhone);
+
+    /**
      * Fetch orders within a date range, eagerly loading items, products, and categories.
      * Used by ReportService for all aggregation (done in Java streams, not SQL).
      */

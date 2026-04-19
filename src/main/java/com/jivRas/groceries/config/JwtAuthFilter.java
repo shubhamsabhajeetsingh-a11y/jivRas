@@ -1,8 +1,10 @@
 package com.jivRas.groceries.config;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -74,6 +76,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 				SecurityContextHolder.getContext().setAuthentication(authToken);
 			}
+		}
+
+		// No valid JWT → treat the caller as GUEST so the RBAC aspect can enforce
+		// guest-level permissions instead of leaking a 500 NullPointerException.
+		if (SecurityContextHolder.getContext().getAuthentication() == null) {
+			UsernamePasswordAuthenticationToken guestAuth = new UsernamePasswordAuthenticationToken(
+					"guest", null,
+					List.of(new SimpleGrantedAuthority("ROLE_GUEST")));
+			SecurityContextHolder.getContext().setAuthentication(guestAuth);
 		}
 
 		filterChain.doFilter(request, response);

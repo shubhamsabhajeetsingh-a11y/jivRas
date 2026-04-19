@@ -55,44 +55,49 @@ public class DynamicAuthorizationService {
     @Cacheable(value = "permissions", key = "#role + ':' + #endpoint + ':' + #httpMethod")
     public boolean isAllowed(String role, String endpoint, String httpMethod) {
 
-        System.out.println("RBAC CHECK → role: [" + role + "] endpoint: [" + endpoint + "] method: [" + httpMethod + "]");
-
-        // Step 1: null guard
         if (role == null || endpoint == null || httpMethod == null) {
             return false;
         }
 
-        // Step 2: strip ROLE_ prefix
         String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
-        System.out.println("cleanRole: [" + cleanRole + "] equals SUPER_ADMIN? " + "SUPER_ADMIN".equals(cleanRole));
 
-        // Step 3: ADMIN / SUPER_ADMIN bypass — always allowed, no DB query needed
         if ("ADMIN".equals(cleanRole) || "SUPER_ADMIN".equals(cleanRole)) {
             return true;
         }
 
-        // Step 4: resolve incoming request → module + action
         String[] resolved = moduleActionScanner.resolveModuleAction(httpMethod, endpoint);
-
-        // Step 5: unmapped endpoint → denied by default
         if (resolved == null) {
             return false;
         }
 
-        String module = resolved[0];
-        String action = resolved[1];
+        return queryPermission(cleanRole, resolved[0], resolved[1]);
+    }
 
-        // Step 6: query DB
-        Optional<RolePermission> rpOpt =
-                rolePermissionRepository.findByRoleAndModuleAndAction(cleanRole, module, action);
+    /**
+     * Checks permission directly by module and action — used by the AOP aspect
+     * ({@link com.jivRas.groceries.aspect.ModuleActionAspect}) which already
+     * knows the module/action from the {@code @ModuleAction} annotation.
+     */
+    @Cacheable(value = "permissions", key = "#role + ':' + #module + ':' + #action")
+    public boolean isAllowedByModuleAction(String role, String module, String action) {
 
-        // Step 7: no row → denied
-        if (rpOpt.isEmpty()) {
+        if (role == null || module == null || action == null) {
             return false;
         }
 
-        // Step 8: return DB-stored flag
-        return rpOpt.get().isAllowed();
+        String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
+
+        if ("ADMIN".equals(cleanRole) || "SUPER_ADMIN".equals(cleanRole)) {
+            return true;
+        }
+
+        return queryPermission(cleanRole, module, action);
+    }
+
+    private boolean queryPermission(String cleanRole, String module, String action) {
+        Optional<RolePermission> rpOpt =
+                rolePermissionRepository.findByRoleAndModuleAndAction(cleanRole, module, action);
+        return rpOpt.isPresent() && rpOpt.get().isAllowed();
     }
 
     /**

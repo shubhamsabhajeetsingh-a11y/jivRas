@@ -183,7 +183,6 @@ public class RolePermissionController {
 
     @ModuleAction(module = "ROLE_MANAGEMENT", action = "DELETE")
     @org.springframework.web.bind.annotation.DeleteMapping("/roles/{roleName}")
-    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> deleteRole(
             @org.springframework.web.bind.annotation.PathVariable String roleName,
             Authentication authentication) {

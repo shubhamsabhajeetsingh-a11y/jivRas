@@ -18,6 +18,9 @@ public class CheckoutRequest {
     @Pattern(regexp = "^[0-9]{10}$", message = "Mobile must be exactly 10 digits")
     private String mobile;
 
+    /** Optional — guests may omit; used for order confirmation emails. */
+    private String email;
+
     @NotBlank(message = "Address is required")
     private String addressLine;
 

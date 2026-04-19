@@ -111,6 +111,18 @@ public class OrderService {
 
         order.setTotalAmount(totalAmount);
 
+        // Always populate customer_phone from checkout form mobile field.
+        // Required for order history lookup by phone and for guest-to-registered linking.
+        order.setCustomerPhone(request.getMobile());
+
+        // Email is optional — guests may leave blank, registered users may already have it on their User record.
+        order.setCustomerEmail(request.getEmail());
+
+        // userId starts with "guest_" when X-Guest-Id header was used (see OrderController.resolveUserId).
+        // Flag the order as guest so admin UI can filter/badge it; user FK stays null for guests.
+        boolean isGuestOrder = userId != null && userId.startsWith("guest_");
+        order.setIsGuest(isGuestOrder);
+
         // 4. Save order
         Order savedOrder = orderRepository.save(order);
 

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,8 +22,6 @@ import com.jivRas.groceries.entity.EmployeeUser;
 import com.jivRas.groceries.repository.EmployeeUserRepository;
 import com.jivRas.groceries.service.BranchInventoryService;
 import com.jivRas.groceries.service.DynamicAuthorizationService;
-
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -45,18 +42,10 @@ public class BranchInventoryController {
      */
     @ModuleAction(module = "INVENTORY", action = "VIEW")
     @GetMapping("/my-branch")
-    public ResponseEntity<?> getMyBranchInventory(
-            Principal principal,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
+    public ResponseEntity<?> getMyBranchInventory(Principal principal) {
 
         if (principal == null) {
             return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
         }
 
         Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(principal.getName());
@@ -80,16 +69,7 @@ public class BranchInventoryController {
      */
     @ModuleAction(module = "INVENTORY", action = "VIEW")
     @GetMapping("/branch/{branchId}")
-    public ResponseEntity<?> getBranchInventory(
-            @PathVariable Long branchId,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
-
+    public ResponseEntity<?> getBranchInventory(@PathVariable Long branchId) {
         List<BranchInventoryResponse> inventory = branchInventoryService.getInventoryByBranch(branchId);
         return ResponseEntity.ok(inventory);
     }
@@ -104,14 +84,7 @@ public class BranchInventoryController {
     @PostMapping("/stock")
     public ResponseEntity<?> addOrUpdateStock(
             @RequestBody BranchInventoryRequest request,
-            Principal principal,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+            Principal principal) {
 
         // For non-admin users, enforce that they can only update their own branch
         Optional<EmployeeUser> employeeOpt = employeeUserRepository.findByUsername(principal.getName());
@@ -131,50 +104,18 @@ public class BranchInventoryController {
 
     @ModuleAction(module = "INVENTORY", action = "EDIT")
     @PutMapping("/bulk-update")
-    public ResponseEntity<?> bulkUpdate(
-            @RequestBody BulkStockUpdateRequest request,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        dynamicAuthorizationService.evictPermissionCache(); // temporary cache buster
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body(java.util.Map.of("error", "Access denied"));
-        }
-
+    public ResponseEntity<?> bulkUpdate(@RequestBody BulkStockUpdateRequest request) {
+        dynamicAuthorizationService.evictPermissionCache();
         List<BranchInventoryResponse> response = branchInventoryService.bulkUpdateStock(request);
         return ResponseEntity.ok(response);
     }
 
     @ModuleAction(module = "INVENTORY", action = "CREATE")
     @PostMapping("/transfer")
-    public ResponseEntity<?> transfer(
-            @RequestBody StockTransferRequest request,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        dynamicAuthorizationService.evictPermissionCache(); // temporary cache buster
-        String role = resolveRole(authentication);
-        System.out.println("====== TRANSFER CALLED ======");
-        System.out.println("Role: " + role);
-        System.out.println("URI: " + httpRequest.getRequestURI());
-
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            System.out.println("Access denied by DynamicAuthorizationService");
-            return ResponseEntity.status(403).body(java.util.Map.of("error", "Access denied"));
-        }
-
+    public ResponseEntity<?> transfer(@RequestBody StockTransferRequest request) {
+        dynamicAuthorizationService.evictPermissionCache();
         java.util.Map<String, Object> response = branchInventoryService.transferStock(request);
         return ResponseEntity.ok(response);
     }
 
-    // ── Utility ─────────────────────────────────────────────────────────────
-
-    private String resolveRole(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) return "";
-        return authentication.getAuthorities().stream()
-                .map(a -> a.getAuthority())
-                .findFirst()
-                .orElse("");
-    }
 }

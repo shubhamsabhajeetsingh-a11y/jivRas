@@ -7,6 +7,7 @@ import { AddProduct } from './add-product/add-product';
 import { CartComponent } from './cart/cart.component';
 import { CheckoutComponent } from './checkout/checkout.component';
 import { OrderConfirmationComponent } from './order-confirmation/order-confirmation.component';
+import { PaymentComponent } from './payment/payment.component';
 import { authGuard } from './auth.guard';
 import { InventoryDashboard } from './inventory-dashboard/inventory-dashboard';
 
@@ -34,7 +35,10 @@ export const routes: Routes = [
   // Checkout — open to everyone
   { path: 'checkout', component: CheckoutComponent },
 
-  // Order confirmation
+  // Payment page — Razorpay modal; no auth guard (guest flow must work too)
+  { path: 'payment/:orderId', component: PaymentComponent },
+
+  // Order confirmation — post-payment success destination
   { path: 'order-confirmation/:id', component: OrderConfirmationComponent },
 
   // Default redirect

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Read(//e/JivRas/groceries\\(2\\)/groceries/**)"
+      "Read(//e/JivRas/groceries\\(2\\)/groceries/**)",
+      "Read(//c/Users/shubh/.claude/projects/e--JivRas-groceries-2--groceries-grocery-frontend/**)",
+      "Bash(python3 -c \" import sys, json lines = sys.stdin.readlines\\(\\) for line in lines: try: obj = json.loads\\(line\\) msg = obj.get\\('message', {}\\) role = msg.get\\('role', ''\\) content = msg.get\\('content', ''\\) if isinstance\\(content, str\\) and content.strip\\(\\): print\\(f'[{role}]: {content[:500]}'\\) elif isinstance\\(content, list\\): for c in content: if isinstance\\(c, dict\\): if c.get\\('type'\\) == 'text': print\\(f'[{role}]: {c[\\\\\"text\\\\\"][:500]}'\\) except: pass \")"
     ],
     "additionalDirectories": [
       "e:\\JivRas\\groceries(2)\\groceries\\src\\main\\java\\com\\jivRas\\groceries\\entity",

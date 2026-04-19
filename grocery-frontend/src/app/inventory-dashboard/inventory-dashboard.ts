@@ -345,6 +345,7 @@ export class InventoryDashboard implements OnInit {
           this.products = data;
           this.isLoading = false;
           this.filterProducts();
+          this.cdr.detectChanges();
         });
       },
       error: (err) => {
@@ -352,6 +353,7 @@ export class InventoryDashboard implements OnInit {
           this.errorMessage = 'Failed to load inventory.';
           this.isLoading = false;
           console.error(err);
+          this.cdr.detectChanges();
         });
       }
     });

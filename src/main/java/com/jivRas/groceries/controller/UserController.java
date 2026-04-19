@@ -23,10 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.annotation.ModuleAction;
-import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.RsaKeyService;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.jivRas.groceries.config.JwtService;
 import com.jivRas.groceries.dto.CreateCustomerRequest;
@@ -55,7 +52,6 @@ public class UserController {
     private final KafkaEventProducer kafkaEventProducer;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final DynamicAuthorizationService dynamicAuthorizationService;
     private final BranchRepository branchRepository;
     private final RsaKeyService rsaKeyService;
     private final RolePermissionRepository rolePermissionRepository;
@@ -64,7 +60,6 @@ public class UserController {
             PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
             KafkaEventProducer kafkaEventProducer, JwtService jwtService,
             DaoAuthenticationProvider authenticationProvider, RefreshTokenRepository refreshTokenRepository,
-            DynamicAuthorizationService dynamicAuthorizationService,
             BranchRepository branchRepository,
             RsaKeyService rsaKeyService,
             RolePermissionRepository rolePermissionRepository) {
@@ -75,7 +70,6 @@ public class UserController {
         this.kafkaEventProducer = kafkaEventProducer;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
-        this.dynamicAuthorizationService = dynamicAuthorizationService;
         this.branchRepository = branchRepository;
         this.rsaKeyService = rsaKeyService;
         this.rolePermissionRepository = rolePermissionRepository;
@@ -338,17 +332,8 @@ public class UserController {
      */
     @ModuleAction(module = "USERS", action = "VIEW")
     @GetMapping("/roles")
-    public ResponseEntity<?> getAssignableRoles(
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
-
+    public ResponseEntity<?> getAssignableRoles() {
         List<String> roles = employeeUserRepository.findDistinctRolesExcludingAdmin();
-        System.out.println("Roles fetched from DB: " + roles);
         return ResponseEntity.ok(roles);
     }
 
@@ -360,14 +345,7 @@ public class UserController {
      */
     @ModuleAction(module = "USERS", action = "VIEW")
     @GetMapping("/employees")
-    public ResponseEntity<?> getAllEmployees(
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+    public ResponseEntity<?> getAllEmployees() {
 
         List<EmployeeUser> employees = employeeUserRepository.findAllByRoleNot("ADMIN");
         List<EmployeeDetailResponse> result = employees.stream().map(emp -> {
@@ -401,14 +379,7 @@ public class UserController {
     @PutMapping("/employees/{id}")
     public ResponseEntity<?> updateEmployee(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+            @RequestBody Map<String, String> body) {
 
         return employeeUserRepository.findById(id).map(emp -> {
             if (body.containsKey("mobile"))  emp.setMobile(body.get("mobile"));
@@ -436,14 +407,7 @@ public class UserController {
     @PutMapping("/employees/{id}/reset-password")
     public ResponseEntity<?> resetPassword(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body,
-            HttpServletRequest httpRequest,
-            Authentication authentication) {
-
-        String role = resolveRole(authentication);
-        if (!dynamicAuthorizationService.isAllowed(role, httpRequest.getRequestURI(), httpRequest.getMethod())) {
-            return ResponseEntity.status(403).body("Access denied");
-        }
+            @RequestBody Map<String, String> body) {
 
         String newPassword = body.get("newPassword");
         if (newPassword == null || newPassword.trim().length() < 6) {
@@ -457,13 +421,4 @@ public class UserController {
         }).orElseGet(() -> ResponseEntity.status(404).body("Employee not found"));
     }
 
-    // ── Utility ─────────────────────────────────────────────────────────────
-
-    private String resolveRole(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) return "";
-        return authentication.getAuthorities().stream()
-                .map(a -> a.getAuthority())
-                .findFirst()
-                .orElse("");
-    }
 }

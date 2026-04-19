@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local overrides — contains real Razorpay secrets; never commit
+application-local.properties
+src/main/resources/application-local.properties

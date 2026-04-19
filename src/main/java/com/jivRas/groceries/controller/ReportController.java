@@ -2,14 +2,11 @@ package com.jivRas.groceries.controller;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,145 +14,71 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.dto.*;
-import com.jivRas.groceries.service.DynamicAuthorizationService;
 import com.jivRas.groceries.service.ReportService;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
-/**
- * REST controller for the Reports tab.
- *
- * All endpoints check DynamicAuthorizationService so permissions are managed
- * in the role_permissions table — same pattern as OrderController.
- */
 @RestController
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor
 public class ReportController {
 
     private final ReportService reportService;
-    private final DynamicAuthorizationService dynamicAuthorizationService;
 
-    // ── KPI Summary ───────────────────────────────────────────────────
-
-    /**
-     * GET /api/reports/summary
-     * Today's total revenue, order count, top item, top category, low stock count.
-     */
     @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/summary")
-    public ResponseEntity<?> getSummary(
-            HttpServletRequest req, Authentication auth) {
-
-        if (!isAllowed(req, auth)) return forbidden();
+    public ResponseEntity<?> getSummary() {
         return ResponseEntity.ok(reportService.getSummary());
     }
 
-    // ── Sales Trend ───────────────────────────────────────────────────
-
-    /**
-     * GET /api/reports/sales-trend?from=2026-03-01&amp;to=2026-04-04
-     * Daily revenue + order count for the given date range (default: last 30 days).
-     */
     @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/sales-trend")
     public ResponseEntity<?> getSalesTrend(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            HttpServletRequest req, Authentication auth) {
-
-        if (!isAllowed(req, auth)) return forbidden();
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         LocalDate end   = (to   != null) ? to   : LocalDate.now();
         LocalDate start = (from != null) ? from : end.minusDays(29);
         return ResponseEntity.ok(reportService.getSalesTrend(start, end));
     }
 
-    // ── Top Products ──────────────────────────────────────────────────
-
-    /**
-     * GET /api/reports/top-products?from=&amp;to=&amp;limit=10
-     * Top N products by kg sold in the date range.
-     */
     @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/top-products")
     public ResponseEntity<?> getTopProducts(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(defaultValue = "10") int limit,
-            HttpServletRequest req, Authentication auth) {
-
-        if (!isAllowed(req, auth)) return forbidden();
+            @RequestParam(defaultValue = "10") int limit) {
         LocalDate end   = (to   != null) ? to   : LocalDate.now();
         LocalDate start = (from != null) ? from : end.minusDays(29);
         return ResponseEntity.ok(reportService.getTopProducts(start, end, limit));
     }
 
-    // ── Category Breakdown ────────────────────────────────────────────
-
-    /**
-     * GET /api/reports/category-breakdown?from=&amp;to=
-     * Revenue and volume per product category.
-     */
     @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/category-breakdown")
     public ResponseEntity<?> getCategoryBreakdown(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            HttpServletRequest req, Authentication auth) {
-
-        if (!isAllowed(req, auth)) return forbidden();
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         LocalDate end   = (to   != null) ? to   : LocalDate.now();
         LocalDate start = (from != null) ? from : end.minusDays(29);
         return ResponseEntity.ok(reportService.getCategoryBreakdown(start, end));
     }
 
-    // ── Branch Comparison ─────────────────────────────────────────────
-
-    /**
-     * GET /api/reports/branch-comparison
-     * Inventory health stats for every branch.
-     */
     @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/branch-comparison")
-    public ResponseEntity<?> getBranchComparison(
-            HttpServletRequest req, Authentication auth) {
-
-        if (!isAllowed(req, auth)) return forbidden();
+    public ResponseEntity<?> getBranchComparison() {
         return ResponseEntity.ok(reportService.getBranchComparison());
     }
 
-    // ── Stock Alerts ──────────────────────────────────────────────────
-
-    /**
-     * GET /api/reports/low-stock
-     * All branch-product entries below their threshold, with projected stockout.
-     */
     @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/low-stock")
-    public ResponseEntity<?> getLowStock(
-            HttpServletRequest req, Authentication auth) {
-
-        if (!isAllowed(req, auth)) return forbidden();
+    public ResponseEntity<?> getLowStock() {
         return ResponseEntity.ok(reportService.getStockAlerts());
     }
 
-    // ── Excel Export ──────────────────────────────────────────────────
-
-    /**
-     * GET /api/reports/export/excel?from=&amp;to=
-     * Downloads a three-sheet .xlsx: Order Summary, Product Sales, Stock Alerts.
-     */
     @ModuleAction(module = "REPORTS", action = "VIEW")
     @GetMapping("/export/excel")
     public ResponseEntity<byte[]> exportExcel(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            HttpServletRequest req, Authentication auth) {
-
-        if (!isAllowed(req, auth)) {
-            return ResponseEntity.status(403).build();
-        }
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         LocalDate end   = (to   != null) ? to   : LocalDate.now();
         LocalDate start = (from != null) ? from : end.minusDays(29);
 
@@ -171,21 +94,5 @@ public class ReportController {
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
-    }
-
-    // ─────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────
-
-    private boolean isAllowed(HttpServletRequest req, Authentication auth) {
-        String role = (auth != null && auth.isAuthenticated())
-                ? auth.getAuthorities().stream()
-                        .map(a -> a.getAuthority()).findFirst().orElse("")
-                : "";
-        return dynamicAuthorizationService.isAllowed(role, req.getRequestURI(), req.getMethod());
-    }
-
-    private ResponseEntity<String> forbidden() {
-        return ResponseEntity.status(403).body("Access denied");
     }
 }

@@ -71,20 +71,28 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<?> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
-        return ResponseEntity.status(403).body(
-                Map.of(
-                        "error", "Access Denied",
-                        "message", "You are not authorized to perform this action"
-                ));
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .message(ex.getMessage() != null ? ex.getMessage() : "Access denied")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
-    public ResponseEntity<?> handleUnauthorized(org.springframework.security.core.AuthenticationException ex) {
-        return ResponseEntity.status(401).body(
-                Map.of(
-                        "error", "Unauthorized",
-                        "message", "Invalid or expired token. Please login again."
-                ));
+    public ResponseEntity<ErrorResponse> handleUnauthorized(
+            org.springframework.security.core.AuthenticationException ex) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .message("Invalid or expired token. Please login again.")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 }

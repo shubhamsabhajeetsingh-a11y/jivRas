@@ -1,0 +1,57 @@
+<div class="payment-page">
+  <div class="payment-container">
+
+    <!-- Order summary card — shown in all states once order is loaded -->
+    <div class="order-summary-card" *ngIf="order">
+      <h3>Order Summary</h3>
+      <div class="summary-row">
+        <span>Order</span>
+        <span class="order-id-label">#{{ order.orderId }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Customer</span>
+        <span>{{ order.customerName }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Mobile</span>
+        <span>{{ order.mobile }}</span>
+      </div>
+      <div class="summary-row total-row">
+        <span>Total Amount</span>
+        <span class="amount">₹{{ order.totalAmount | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <!-- LOADING — fetching order details or creating Razorpay order -->
+    <div class="state-card" *ngIf="state === 'LOADING'">
+      <div class="spinner"></div>
+      <p class="state-msg">Preparing payment...</p>
+    </div>
+
+    <!-- READY — Razorpay order created; show Pay Now button -->
+    <div class="state-card" *ngIf="state === 'READY'">
+      <div class="pay-icon">💳</div>
+      <h2>Ready to Pay</h2>
+      <p class="state-msg">Click below to open the secure payment window.</p>
+      <button class="pay-btn" (click)="openRazorpay()">
+        Pay ₹{{ order?.totalAmount | number:'1.2-2' }} Now
+      </button>
+    </div>
+
+    <!-- PROCESSING — Razorpay success received; verifying signature with backend -->
+    <div class="state-card" *ngIf="state === 'PROCESSING'">
+      <div class="spinner"></div>
+      <p class="state-msg">Verifying payment... please wait.</p>
+    </div>
+
+    <!-- FAILED — payment cancelled, failed, or verification error -->
+    <div class="state-card failed-card" *ngIf="state === 'FAILED'">
+      <div class="fail-icon">❌</div>
+      <h2>Payment Failed</h2>
+      <p class="failure-reason">{{ failureReason }}</p>
+      <button class="retry-btn" (click)="retryPayment()">Retry Payment</button>
+      <a class="back-link" routerLink="/cart">← Back to Cart</a>
+    </div>
+
+  </div>
+</div>

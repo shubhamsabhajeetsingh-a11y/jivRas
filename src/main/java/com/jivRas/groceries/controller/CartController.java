@@ -96,9 +96,11 @@ public class CartController {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // If user is authenticated (not anonymous), use their username
+        // Treat "guest" sentinel (injected by JwtAuthFilter for unauthenticated requests)
+        // the same as anonymous — fall through to the X-Guest-Id header.
         if (auth != null && auth.isAuthenticated()
-                && !"anonymousUser".equals(auth.getPrincipal())) {
+                && !"anonymousUser".equals(auth.getPrincipal())
+                && !"guest".equals(auth.getPrincipal())) {
             return auth.getName();
         }
 
