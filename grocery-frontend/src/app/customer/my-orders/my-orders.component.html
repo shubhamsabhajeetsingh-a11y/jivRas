@@ -1,0 +1,100 @@
+<div class="my-orders-page">
+  <div class="page-header">
+    <h1>My Orders</h1>
+    <p class="subtitle">Track and manage your past orders</p>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-tabs">
+    <button [class.active]="activeFilter === 'ALL'" (click)="setFilter('ALL')">
+      All ({{ orders.length }})
+    </button>
+    <button [class.active]="activeFilter === 'ACTIVE'" (click)="setFilter('ACTIVE')">
+      Active
+    </button>
+    <button [class.active]="activeFilter === 'DELIVERED'" (click)="setFilter('DELIVERED')">
+      Delivered
+    </button>
+    <button [class.active]="activeFilter === 'CANCELLED'" (click)="setFilter('CANCELLED')">
+      Cancelled
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="empty-state">Loading your orders...</div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="error-state">
+    {{ error }}
+    <button class="retry-btn" (click)="loadOrders()">Retry</button>
+  </div>
+
+  <!-- Empty list -->
+  <div *ngIf="!loading && !error && filteredOrders.length === 0" class="empty-state">
+    <div class="empty-icon">📦</div>
+    <div class="empty-title">No orders to show</div>
+    <div class="empty-sub" *ngIf="activeFilter === 'ALL'">
+      You haven't placed any orders yet.
+      <a routerLink="/products" class="shop-link">Start shopping →</a>
+    </div>
+    <div class="empty-sub" *ngIf="activeFilter !== 'ALL'">
+      No {{ activeFilter.toLowerCase() }} orders.
+    </div>
+  </div>
+
+  <!-- Order cards -->
+  <div *ngIf="!loading && !error && filteredOrders.length > 0" class="order-list">
+    <div *ngFor="let order of filteredOrders" class="order-card">
+      <div class="order-card-header">
+        <div class="order-id-block">
+          <span class="order-id">Order #{{ order.orderId }}</span>
+          <span class="order-date">{{ order.orderDate | date:'d MMM yyyy, HH:mm' }}</span>
+        </div>
+        <div class="chip-group">
+          <span class="status-chip" [ngClass]="statusChipClass(order.status)">{{ order.status }}</span>
+          <span class="payment-chip" [ngClass]="'payment-' + order.paymentStatus.toLowerCase()">
+            {{ paymentChipLabel(order.paymentStatus) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="order-card-body">
+        <div class="items-preview">
+          <span class="item-name">{{ order.firstItemName }}</span>
+          <span *ngIf="order.additionalItemCount > 0" class="more-items">
+            + {{ order.additionalItemCount }} more
+          </span>
+        </div>
+        <div class="total-amount">₹{{ order.totalAmount | number:'1.2-2' }}</div>
+      </div>
+
+      <div class="order-card-footer">
+        <!-- View details: reuse existing order-confirmation route -->
+        <a [routerLink]="['/order-confirmation', order.orderId]" class="btn-secondary">
+          View Details
+        </a>
+
+        <!-- Cancel button: only shown if backend flags canCancel (CREATED + not PAID) -->
+        <button
+          *ngIf="order.canCancel"
+          class="btn-danger"
+          [disabled]="cancellingOrderId === order.orderId"
+          (click)="openCancelConfirm(order.orderId)">
+          {{ cancellingOrderId === order.orderId ? 'Cancelling...' : 'Cancel Order' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel confirmation dialog -->
+  <div *ngIf="cancelConfirmOrderId" class="modal-backdrop" (click)="closeCancelConfirm()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <h3>Cancel this order?</h3>
+      <p>Order #{{ cancelConfirmOrderId }} will be cancelled. This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closeCancelConfirm()">Keep Order</button>
+        <button class="btn-danger" (click)="confirmCancel()">Yes, Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>

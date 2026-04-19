@@ -41,6 +41,13 @@ export const routes: Routes = [
   // Order confirmation — post-payment success destination
   { path: 'order-confirmation/:id', component: OrderConfirmationComponent },
 
+  // Customer order history — registered customers only (guest check inside component)
+  {
+    path: 'my-orders',
+    loadComponent: () => import('./customer/my-orders/my-orders.component').then(m => m.MyOrdersComponent),
+    canActivate: [authGuard]
+  },
+
   // Default redirect
   { path: '', redirectTo: 'products', pathMatch: 'full' },
   { path: '**', redirectTo: 'products' }

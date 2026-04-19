@@ -17,6 +17,11 @@
         <span *ngIf="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
       </button>
 
+      <!-- My Orders: only visible to logged-in registered users (not guests) -->
+      <a *ngIf="isLoggedIn && !isGuest" routerLink="/my-orders" class="my-orders-btn">
+        📦 My Orders
+      </a>
+
       <app-user-profile *ngIf="isLoggedIn"></app-user-profile>
 
       <a *ngIf="!isLoggedIn" routerLink="/login" class="login-link-btn">

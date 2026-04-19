@@ -26,6 +26,10 @@
       <div class="nav-item" [class.active]="activeTab === 'reports'" (click)="setTab('reports')">
         <span class="nav-icon">📊</span> Reports
       </div>
+      <!-- Payments — ADMIN only -->
+      <div class="nav-item nav-item-admin" *ngIf="isAdminUser" [class.active]="activeTab === 'payments'" (click)="setTab('payments')">
+        <span class="nav-icon">💳</span> Payments
+      </div>
       <!-- Create Role — ADMIN only -->
       <!-- Hide Create Role from sidebar — accessible via Role Definition page button only -->
       <div class="nav-item nav-item-admin" *ngIf="isAdminUser"
@@ -95,6 +99,7 @@
          <ng-container *ngIf="activeTab === 'inventory'">Inventory</ng-container>
          <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
          <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
+         <ng-container *ngIf="activeTab === 'payments'">Payments</ng-container>
          <ng-container *ngIf="activeTab === 'create-role'">
            <button class="create-role-btn" type="button" (click)="openCreateRoleModal()">+ Create Role</button>
          </ng-container>
@@ -318,6 +323,9 @@
 
       <!-- ── Reports Tab ── -->
       <app-reports [hidden]="activeTab !== 'reports'"></app-reports>
+
+      <!-- ── Payments Tab ── -->
+      <app-payments-dashboard *ngIf="activeTab === 'payments'"></app-payments-dashboard>
 
       <!-- ── Create Role Tab (ADMIN only) ── -->
       <div *ngIf="activeTab === 'create-role' && isAdminUser" class="cr-wrapper">

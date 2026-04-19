@@ -21,6 +21,10 @@ import com.jivRas.groceries.exception.ResourceNotFoundException;
 import com.jivRas.groceries.repository.CartRepository;
 import com.jivRas.groceries.repository.OrderRepository;
 import com.jivRas.groceries.repository.ProductRepository;
+import com.jivRas.groceries.repository.PaymentRepository;
+import com.jivRas.groceries.enums.PaymentStatus;
+import com.jivRas.groceries.dto.order.CustomerOrderSummaryDto;
+import com.jivRas.groceries.entity.Payment;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +46,11 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final DeliveryService deliveryService;
     private final CartService cartService;
+    private final PaymentRepository paymentRepository;
+
+    // TODO (tech debt): Order.userId is String to hold either numeric user IDs or "guest_<uuid>".
+    // Cleaner long-term: separate `customer_id Long FK` and `guest_session_id String` columns.
+    // Current code handles both formats defensively — see getMyOrders(), getGuestOrdersByPhone(), cancelMyOrder().
 
     /**
      * Checkout the user's cart — creates an order and clears the cart.
@@ -144,12 +153,73 @@ public class OrderService {
         return toOrderResponse(order);
     }
 
+    public List<CustomerOrderSummaryDto> getMyOrders(Long customerId) {
+        String callingUserIdStr = String.valueOf(customerId);
+        List<Order> orders = orderRepository.findByUserIdOrderByOrderDateDesc(callingUserIdStr);
+        return orders.stream().map(this::toCustomerOrderSummaryDto).collect(Collectors.toList());
+    }
+
+    public List<CustomerOrderSummaryDto> getGuestOrdersByPhone(String phone) {
+        // NOTE: The filter to keep only guest orders is critical.
+        // If a phone number has BOTH a guest order (no user account at time of order)
+        // AND a registered-user order (later signed up and placed a new order),
+        // this method must return only the guest orders to avoid exposing the
+        // registered user's data to someone who just has the phone number.
+        List<Order> orders = orderRepository.findByCustomerPhoneOrderByOrderDateDesc(phone);
+        return orders.stream()
+                // Guest orders are identified by any of:
+                //   - isGuest == true (canonical flag from Phase 1)
+                //   - userId is null
+                //   - userId starts with "guest_" prefix (legacy before isGuest flag existed)
+                .filter(o -> Boolean.TRUE.equals(o.getIsGuest())
+                        || o.getUserId() == null
+                        || (o.getUserId() != null && o.getUserId().startsWith("guest_")))
+                .map(this::toCustomerOrderSummaryDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Order cancelMyOrder(Long orderId, Long customerId) {
+        // Cancellation allowed only in the initial order state (CREATED in this codebase —
+        // semantically equivalent to "PENDING" in generic e-commerce terminology).
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        // auth.getName() returns numeric user ID as String for registered users.
+        // Order.userId may be either "42" (registered) or "guest_<uuid>" (guest).
+        // Ownership check: order's userId must match the calling user's ID string.
+        String callingUserId = String.valueOf(customerId);
+        if (!callingUserId.equals(order.getUserId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Not your order");
+        }
+
+        if (!"CREATED".equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Only PENDING orders can be cancelled");
+        }
+
+        Payment latestPayment = paymentRepository.findByOrderIdOrderByCreatedAtDesc(orderId).stream().findFirst().orElse(null);
+        if (latestPayment != null && PaymentStatus.PAID.equals(latestPayment.getStatus())) {
+            throw new IllegalStateException("Paid orders cannot be cancelled via self-service; contact support for refund");
+        }
+
+        order.setOrderStatus("CANCELLED");
+        return orderRepository.save(order);
+    }
+
 
 
     // ──────────────────────────── Admin Methods ────────────────────────────
 
-    public List<AdminOrderResponse> getAllOrdersForAdmin() {
-        return orderRepository.findAllByOrderByOrderDateDesc().stream()
+    public List<AdminOrderResponse> getAllOrdersForAdmin(Boolean guestOnly) {
+        List<Order> allOrders = orderRepository.findAllByOrderByOrderDateDesc();
+        return allOrders.stream()
+                .filter(o -> {
+                    // guestOnly null = show all (default), true = guests only, false = registered only.
+                    // Frontend toggles between all/guest/registered via this single param.
+                    if (guestOnly == null) return true;
+                    if (guestOnly) return Boolean.TRUE.equals(o.getIsGuest());
+                    return !Boolean.TRUE.equals(o.getIsGuest());
+                })
                 .map(order -> {
                     List<OrderItemResponse> itemResponses = order.getItems().stream()
                             .map(item -> OrderItemResponse.builder()
@@ -161,6 +231,14 @@ public class OrderService {
                                     .subtotal(item.getQuantityKg() * item.getPricePerKg())
                                     .build())
                             .collect(Collectors.toList());
+
+                    // Try to parse userId as Long if it's not a guest
+                    Long customerId = null;
+                    if (!Boolean.TRUE.equals(order.getIsGuest()) && order.getUserId() != null && !order.getUserId().startsWith("guest_")) {
+                        try {
+                            customerId = Long.parseLong(order.getUserId());
+                        } catch (NumberFormatException ignored) {}
+                    }
 
                     return AdminOrderResponse.builder()
                             .orderId(order.getId())
@@ -174,14 +252,16 @@ public class OrderService {
                             .city(order.getCity())
                             .state(order.getState())
                             .pincode(order.getPincode())
+                            .isGuest(order.getIsGuest())
+                            .customerId(customerId)
                             .items(itemResponses)
                             .build();
                 })
                 .collect(Collectors.toList());
     }
 
-    public Map<String, List<AdminOrderResponse>> getOrdersGroupedByCategory() {
-        return getAllOrdersForAdmin().stream()
+    public Map<String, List<AdminOrderResponse>> getOrdersGroupedByCategory(Boolean guestOnly) {
+        return getAllOrdersForAdmin(guestOnly).stream()
                 .flatMap(adminOrder -> adminOrder.getItems().stream()
                         .map(item -> {
                             String categoryName = "Uncategorized";
@@ -231,6 +311,35 @@ public class OrderService {
                 .state(order.getState())
                 .pincode(order.getPincode())
                 .items(itemResponses)
+                .build();
+    }
+
+    private CustomerOrderSummaryDto toCustomerOrderSummaryDto(Order order) {
+        Payment latestPayment = paymentRepository.findByOrderIdOrderByCreatedAtDesc(order.getId()).stream().findFirst().orElse(null);
+        PaymentStatus paymentStatus = latestPayment != null ? latestPayment.getStatus() : PaymentStatus.NOT_APPLICABLE;
+
+        int itemCount = 0;
+        String firstItemName = null;
+        for (OrderItem item : order.getItems()) {
+            if (firstItemName == null) {
+                firstItemName = item.getProductName();
+            }
+            itemCount += item.getQuantityKg(); // Assuming quantity is the count representation here
+        }
+        int additionalItemCount = order.getItems().size() > 1 ? order.getItems().size() - 1 : 0;
+        
+        boolean canCancel = "CREATED".equals(order.getOrderStatus()) && !PaymentStatus.PAID.equals(paymentStatus);
+
+        return CustomerOrderSummaryDto.builder()
+                .orderId(order.getId())
+                .orderDate(order.getOrderDate())
+                .status(order.getOrderStatus())
+                .paymentStatus(paymentStatus)
+                .totalAmount(Math.round(order.getTotalAmount()))
+                .itemCount(itemCount)
+                .firstItemName(firstItemName)
+                .additionalItemCount(additionalItemCount)
+                .canCancel(canCancel)
                 .build();
     }
 }

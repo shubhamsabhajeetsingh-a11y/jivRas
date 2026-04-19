@@ -20,6 +20,7 @@ export class ProductComponent implements OnInit {
   searchTerm: string = '';
   isEmployee = false;
   isLoggedIn = false;
+  isGuest = false;   // GUEST role has no registered account; hide My Orders for them
   cartItemCount = 0;
   addedProductId: number | null = null; // For showing "Added!" feedback
 
@@ -43,6 +44,9 @@ export class ProductComponent implements OnInit {
 
       this.isEmployee = false;
       this.isLoggedIn = !!localStorage.getItem('accessToken');
+      // Determine if this is a guest session (no account, no JWT role)
+      const role = localStorage.getItem('userRole');
+      this.isGuest = !role || role === 'GUEST';
       this.loadProducts();
 
       // Subscribe to cart count for badge

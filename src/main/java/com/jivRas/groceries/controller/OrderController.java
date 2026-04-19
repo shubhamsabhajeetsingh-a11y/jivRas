@@ -12,12 +12,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.annotation.ModuleAction;
 import com.jivRas.groceries.dto.CheckoutRequest;
-import com.jivRas.groceries.dto.OrderResponse;
 import com.jivRas.groceries.dto.AdminOrderResponse;
+import com.jivRas.groceries.dto.order.CustomerOrderSummaryDto;
 import com.jivRas.groceries.entity.Order;
 import com.jivRas.groceries.entity.OrderStatusHistory;
 import com.jivRas.groceries.exception.ResourceNotFoundException;
@@ -72,16 +73,49 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
+    // ──────────────────────────── Customer / Guest Endpoints ──────────────────────
+
+    /**
+     * Customer-facing: logged-in CUSTOMER sees their own order history.
+     */
+    @GetMapping("/my-orders")
+    @ModuleAction(module = "ORDERS", action = "VIEW")
+    public ResponseEntity<List<CustomerOrderSummaryDto>> getMyOrders(Authentication auth) {
+        // auth.getName() returns the numeric user ID from the JWT (per existing convention)
+        Long customerId = Long.parseLong(auth.getName());
+        return ResponseEntity.ok(orderService.getMyOrders(customerId));
+    }
+
+    /**
+     * Customer-facing self-cancel endpoint.
+     */
+    @PostMapping("/{orderId}/cancel")
+    @ModuleAction(module = "ORDERS", action = "EDIT")
+    public ResponseEntity<Order> cancelMyOrder(@PathVariable Long orderId, Authentication auth) {
+        Long customerId = Long.parseLong(auth.getName());
+        return ResponseEntity.ok(orderService.cancelMyOrder(orderId, customerId));
+    }
+
+    /**
+     * Admin-facing: guest orders lookup by phone — used by Phase 5 signup linking
+     * AND by the admin Orders tab filter.
+     */
+    @GetMapping("/guest-by-phone")
+    @ModuleAction(module = "ORDERS", action = "VIEW_ALL")
+    public ResponseEntity<List<CustomerOrderSummaryDto>> getGuestOrdersByPhone(@RequestParam String phone) {
+        return ResponseEntity.ok(orderService.getGuestOrdersByPhone(phone));
+    }
+
     // ──────────────────────────── Admin / Staff Endpoints ──────────────────────
 
     /**
      * GET /api/orders/admin/all
      * List all orders — ADMIN and EMPLOYEE only (per DB permissions).
      */
-    @ModuleAction(module = "ORDERS", action = "VIEW")
+    @ModuleAction(module = "ORDERS", action = "VIEW_ALL")
     @GetMapping("/admin/all")
-    public ResponseEntity<?> getAllOrdersForAdmin() {
-        List<AdminOrderResponse> orders = orderService.getAllOrdersForAdmin();
+    public ResponseEntity<?> getAllOrdersForAdmin(@RequestParam(required = false) Boolean guestOnly) {
+        List<AdminOrderResponse> orders = orderService.getAllOrdersForAdmin(guestOnly);
         return ResponseEntity.ok(orders);
     }
 
@@ -89,10 +123,10 @@ public class OrderController {
      * GET /api/orders/admin/grouped-by-category
      * Orders grouped by product category — ADMIN and EMPLOYEE only.
      */
-    @ModuleAction(module = "ORDERS", action = "VIEW")
+    @ModuleAction(module = "ORDERS", action = "VIEW_ALL")
     @GetMapping("/admin/grouped-by-category")
-    public ResponseEntity<?> getOrdersGroupedByCategory() {
-        Map<String, List<AdminOrderResponse>> grouped = orderService.getOrdersGroupedByCategory();
+    public ResponseEntity<?> getOrdersGroupedByCategory(@RequestParam(required = false) Boolean guestOnly) {
+        Map<String, List<AdminOrderResponse>> grouped = orderService.getOrdersGroupedByCategory(guestOnly);
         return ResponseEntity.ok(grouped);
     }
 

@@ -24,5 +24,7 @@ public class AdminOrderResponse {
     private String city;
     private String state;
     private String pincode;
+    private Boolean isGuest;
+    private Long customerId;
     private List<OrderItemResponse> items;
 }

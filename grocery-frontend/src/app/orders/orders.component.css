@@ -728,3 +728,55 @@ h2 {
   margin-top: 8px;
   font-size: 13px;
 }
+
+/* ── Customer Type Filter Chips ─────────────────────────────────── */
+
+.customer-type-filter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.customer-type-filter .filter-label {
+  color: #7a7a7a;
+  font-weight: 600;
+  font-size: 13px;
+  margin-right: 4px;
+}
+
+.chip-btn {
+  padding: 5px 14px;
+  border: 1px solid #d0d0d0;
+  border-radius: 16px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.chip-btn:hover { background: #f5f5f5; }
+.chip-btn.active { background: #f97316; color: white; border-color: #f97316; }
+.chip-btn.chip-registered.active { background: #3b82f6; border-color: #3b82f6; }
+.chip-btn.chip-guest.active { background: #f59e0b; border-color: #f59e0b; }
+
+/* ── GUEST badge on order cards ─────────────────────────────────── */
+
+.guest-badge {
+  padding: 2px 6px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 4px;
+  letter-spacing: 0.04em;
+}

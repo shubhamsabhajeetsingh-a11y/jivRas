@@ -37,4 +37,21 @@ export interface PaymentListItem {
   razorpayPaymentId: string | null;
   createdAt: string;
   isGuestOrder: boolean;
+  timelineExpanded?: boolean;
+  timeline?: OrderPaymentTimeline;   // loaded lazily on first expand
+  timelineLoading?: boolean;
+  timelineError?: string;
+}
+
+export interface PaymentAnalytics {
+  totalPaidAmount: number;
+  totalFailedAmount: number;
+  totalRefundedAmount: number;
+  paidCount: number;
+  failedCount: number;
+  pendingCount: number;
+  successRate: number;
+  avgAttemptsPerFailure: number;
+  from: string;
+  to: string;
 }

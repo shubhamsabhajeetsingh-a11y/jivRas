@@ -110,6 +110,23 @@
   transform: scale(1.05);
 }
 
+.my-orders-btn {
+  background: #f97316;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.my-orders-btn:hover {
+  background: #ea6c05;
+  transform: scale(1.05);
+}
+
 .cart-badge {
   position: absolute;
   top: -6px;

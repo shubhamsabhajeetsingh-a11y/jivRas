@@ -28,6 +28,20 @@
     </div>
   </div>
 
+  <!-- Customer Type Filter chips — drives backend refetch via guestFilter param -->
+  <div class="customer-type-filter" *ngIf="!isLoading && !errorMessage">
+    <span class="filter-label">Customer Type:</span>
+    <button class="chip-btn"
+            [class.active]="guestFilter === null"
+            (click)="setGuestFilter(null)">All</button>
+    <button class="chip-btn chip-registered"
+            [class.active]="guestFilter === false"
+            (click)="setGuestFilter(false)">👤 Registered</button>
+    <button class="chip-btn chip-guest"
+            [class.active]="guestFilter === true"
+            (click)="setGuestFilter(true)">🕵️ Guest</button>
+  </div>
+
   <!-- Filter Bar -->
   <div class="filter-bar" *ngIf="!isLoading && !errorMessage">
     <select [(ngModel)]="filters.status" (ngModelChange)="onFilterChange()" class="filter-select">
@@ -93,7 +107,7 @@
       <div class="category-body" *ngIf="expandedCategories.has(category)">
         
         <!-- Orders Loop -->
-        <div *ngFor="let order of groupedOrders[category]" class="order-card" [style.border-left-color]="getBorderColor(order.orderStatus)">
+        <div *ngFor="let order of groupedOrders[category]" id="order-{{ order.orderId }}" class="order-card" [style.border-left-color]="getBorderColor(order.orderStatus)">
           
           <div class="card-header">
             <div class="header-left">
@@ -125,6 +139,8 @@
             <div class="customer-section">
               <div class="customer-row">
                 <span class="customer-name">{{ order.customerName }}</span>
+                <!-- GUEST badge: order placed without a registered account -->
+                <span *ngIf="order.isGuest" class="guest-badge">GUEST</span>
                 <span class="contact">📞 {{ order.mobile }}</span>
               </div>
               <div class="address-info">📍 {{ order.addressLine }}, {{ order.city }}, {{ order.state }} - {{ order.pincode }}</div>

@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { OrderPaymentTimeline, PaymentListItem } from '../../models/payment.model';
+import { OrderPaymentTimeline, PaymentListItem, PaymentAnalytics, PaymentStatus } from '../../models/payment.model';
 
 // ── DTOs matching the backend PaymentController contract ──────────────────────
 
@@ -58,5 +58,18 @@ export class PaymentService {
 
   getAllPayments(): Observable<PaymentListItem[]> {
     return this.http.get<PaymentListItem[]>(`${this.baseUrl}/list`);
+  }
+
+  getPaymentsList(status: PaymentStatus | null, from: string, to: string): Observable<PaymentListItem[]> {
+    let params = new HttpParams();
+    if (status) params = params.set('status', status);
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get<PaymentListItem[]>(`${this.baseUrl}/list`, { params });
+  }
+
+  getAnalytics(from: string, to: string): Observable<PaymentAnalytics> {
+    const params = new HttpParams().set('from', from).set('to', to);
+    return this.http.get<PaymentAnalytics>(`${this.baseUrl}/analytics`, { params });
   }
 }

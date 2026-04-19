@@ -1,0 +1,91 @@
+.my-orders-page { max-width: 900px; margin: 0 auto; padding: 24px; font-family: 'Inter', sans-serif; }
+.page-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; color: #111827; }
+.subtitle { color: #6b7280; margin-bottom: 24px; font-size: 15px; }
+
+/* Filter tabs */
+.filter-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+.filter-tabs button {
+  padding: 10px 18px; border: none; background: transparent; cursor: pointer;
+  font-weight: 500; font-size: 14px; color: #6b7280;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.filter-tabs button.active { color: #f97316; border-bottom-color: #f97316; }
+.filter-tabs button:hover:not(.active) { color: #374151; }
+
+/* Order list */
+.order-list { display: flex; flex-direction: column; gap: 14px; }
+.order-card {
+  background: white; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: 18px; transition: box-shadow 0.15s;
+}
+.order-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); }
+
+/* Card header */
+.order-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.order-id-block { display: flex; align-items: center; gap: 10px; }
+.order-id { font-weight: 700; font-size: 16px; color: #1f2937; }
+.order-date { color: #6b7280; font-size: 13px; }
+.chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Status & payment chips */
+.status-chip, .payment-chip {
+  padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+}
+.status-created    { background: #fef3c7; color: #92400e; }
+.status-confirmed  { background: #dbeafe; color: #1e40af; }
+.status-dispatched { background: #e0e7ff; color: #3730a3; }
+.status-delivered  { background: #dcfce7; color: #166534; }
+.status-cancelled  { background: #fee2e2; color: #991b1b; }
+.payment-paid            { background: #dcfce7; color: #166534; }
+.payment-created         { background: #fef3c7; color: #92400e; }
+.payment-failed          { background: #fee2e2; color: #991b1b; }
+.payment-refunded        { background: #e0e7ff; color: #3730a3; }
+.payment-not_applicable  { background: #f3f4f6; color: #6b7280; }
+
+/* Card body */
+.order-card-body {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-top: 1px dashed #e5e7eb; border-bottom: 1px dashed #e5e7eb;
+}
+.items-preview .item-name { font-weight: 500; color: #374151; }
+.more-items { color: #6b7280; font-size: 13px; margin-left: 8px; }
+.total-amount { font-weight: 700; font-size: 18px; color: #1f2937; }
+
+/* Card footer */
+.order-card-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+.btn-secondary {
+  padding: 8px 16px; background: white; border: 1px solid #d1d5db; border-radius: 6px;
+  cursor: pointer; text-decoration: none; color: #1f2937; font-weight: 500; font-size: 14px;
+  display: inline-flex; align-items: center;
+}
+.btn-secondary:hover { background: #f9fafb; }
+.btn-danger {
+  padding: 8px 16px; background: #ef4444; border: none; border-radius: 6px;
+  cursor: pointer; color: white; font-weight: 500; font-size: 14px;
+}
+.btn-danger:hover { background: #dc2626; }
+.btn-danger:disabled { background: #fca5a5; cursor: not-allowed; }
+
+/* States */
+.empty-state, .error-state {
+  text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-title { font-weight: 600; font-size: 18px; margin-bottom: 6px; color: #1f2937; }
+.empty-sub { color: #6b7280; font-size: 14px; }
+.shop-link { color: #f97316; text-decoration: none; font-weight: 500; margin-left: 6px; }
+.shop-link:hover { text-decoration: underline; }
+.retry-btn { margin-top: 12px; padding: 8px 16px; background: #f97316; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 500; }
+
+/* Cancel confirmation modal */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-card {
+  background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 90%;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+.modal-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 18px; color: #1f2937; }
+.modal-card p { color: #6b7280; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }

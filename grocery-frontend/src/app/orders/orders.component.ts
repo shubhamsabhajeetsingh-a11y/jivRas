@@ -51,6 +51,9 @@ export class OrdersComponent implements OnInit, OnDestroy {
   // Invoice download state
   invoiceLoading: Set<number> = new Set();
 
+  // Guest/registered filter for admin view — null = all, true = guests only, false = registered only
+  guestFilter: boolean | null = null;
+
   private searchSub?: Subscription;
 
   constructor(
@@ -67,8 +70,13 @@ export class OrdersComponent implements OnInit, OnDestroy {
       this.applyAllFilters(query);
     });
 
+    this.loadOrdersFromBackend();
+  }
+
+  /** Fetches orders from backend with current guestFilter applied. */
+  private loadOrdersFromBackend(): void {
     this.isLoading = true;
-    this.ordersService.getOrdersGroupedByCategory().subscribe({
+    this.ordersService.getOrdersGroupedByCategory(this.guestFilter).subscribe({
       next: (data) => {
         this.allGroupedOrders = data;
         this.loadPaymentStatusForAll();
@@ -89,6 +97,12 @@ export class OrdersComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  setGuestFilter(value: boolean | null): void {
+    this.guestFilter = value;
+    // Refetch from backend with the new filter
+    this.loadOrdersFromBackend();
   }
 
   private loadPaymentStatusForAll(): void {

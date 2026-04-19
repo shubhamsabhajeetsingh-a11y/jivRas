@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, Inject, NgZone, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, Inject, NgZone, PLATFORM_ID, ViewChild } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -8,6 +8,7 @@ import { UserProfile } from '../user-profile/user-profile';
 import { OrdersComponent } from '../orders/orders.component';
 import { RoleDefinitionComponent } from '../role-definition/role-definition.component';
 import { ReportsComponent } from '../reports/reports.component';
+import { PaymentsDashboardComponent } from '../payments/payments-dashboard/payments-dashboard.component';
 import { UserService } from '../core/services/user.service';
 import { InventoryService } from '../core/services/inventory.service';
 import { BranchService } from '../core/services/branch.service';
@@ -29,7 +30,7 @@ export interface CategoryMeta {
 @Component({
   selector: 'app-inventory-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent, RoleDefinitionComponent, ReportsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent, RoleDefinitionComponent, ReportsComponent, PaymentsDashboardComponent],
   templateUrl: './inventory-dashboard.html',
   styleUrl: './inventory-dashboard.css',
 })
@@ -60,7 +61,7 @@ export class InventoryDashboard implements OnInit {
 
   currentView: 'card' | 'table' = 'card';
   currentCat: string = 'all';
-  activeTab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'create-branch' | 'role-definition' = 'inventory';
+  activeTab: 'inventory' | 'orders' | 'reports' | 'payments' | 'create-role' | 'create-branch' | 'role-definition' = 'inventory';
 
   // ── Shared Search ──────────────────────────────────────────────────
   searchPlaceholders: Record<string, string> = {
@@ -430,7 +431,7 @@ export class InventoryDashboard implements OnInit {
     this.cdr.detectChanges();
   }
 
-  setTab(tab: 'inventory' | 'orders' | 'reports' | 'create-role' | 'create-branch' | 'role-definition'): void {
+  setTab(tab: 'inventory' | 'orders' | 'reports' | 'payments' | 'create-role' | 'create-branch' | 'role-definition'): void {
     this.activeTab = tab;
     
     // Clear global search everywhere on tab change

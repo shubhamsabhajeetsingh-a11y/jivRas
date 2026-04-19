@@ -35,6 +35,7 @@ public class DataSeeder {
             // are safe to call even when the rest of the table is already populated.
             seedPaymentPermissions();
             seedGuestPermissions();
+            seedOrderViewAllPermissions();
             return;
         }
 
@@ -48,6 +49,7 @@ public class DataSeeder {
         permissions.add(perm("BRANCH_MANAGER", "INVENTORY",  "CREATE", true));
         permissions.add(perm("BRANCH_MANAGER", "INVENTORY",  "EDIT",   true));
         permissions.add(perm("BRANCH_MANAGER", "ORDERS",     "VIEW",   true));
+        permissions.add(perm("BRANCH_MANAGER", "ORDERS",     "VIEW_ALL", true));
         permissions.add(perm("BRANCH_MANAGER", "ORDERS",     "EDIT",   true));
         permissions.add(perm("BRANCH_MANAGER", "REPORTS",    "VIEW",   true));
         permissions.add(perm("BRANCH_MANAGER", "PRODUCTS",   "VIEW",   true));
@@ -60,6 +62,7 @@ public class DataSeeder {
         permissions.add(perm("EMPLOYEE", "INVENTORY",  "EDIT",   true));
         permissions.add(perm("EMPLOYEE", "INVENTORY",  "CREATE", true));
         permissions.add(perm("EMPLOYEE", "ORDERS",     "VIEW",   true));
+        permissions.add(perm("EMPLOYEE", "ORDERS",     "VIEW_ALL", true));
         permissions.add(perm("EMPLOYEE", "ORDERS",     "EDIT",   true));
         permissions.add(perm("EMPLOYEE", "PRODUCTS",   "VIEW",   true));
         permissions.add(perm("EMPLOYEE", "PRODUCTS",   "CREATE", true));
@@ -76,6 +79,7 @@ public class DataSeeder {
         permissions.add(perm("CUSTOMER", "CART",       "DELETE", true));
         permissions.add(perm("CUSTOMER", "ORDERS",     "CREATE", true));
         permissions.add(perm("CUSTOMER", "ORDERS",     "VIEW",   true));
+        permissions.add(perm("CUSTOMER", "ORDERS",     "VIEW_ALL", false));
         permissions.add(perm("CUSTOMER", "USERS",      "VIEW",   true));
         permissions.add(perm("CUSTOMER", "LOCATIONS",  "VIEW",   true));
 
@@ -86,6 +90,8 @@ public class DataSeeder {
 
         // ── PAYMENT (included here so fresh installs get it in a single saveAll) ──
         permissions.addAll(buildPaymentPermissions());
+
+        permissions.addAll(buildOrderViewAllPermissions());
 
         rolePermissionRepository.saveAll(permissions);
         System.out.println("[DataSeeder] Seeded " + permissions.size() + " permission entries.");
@@ -107,6 +113,10 @@ public class DataSeeder {
      */
     private void seedGuestPermissions() {
         seedMissingRows("GUEST", buildGuestPermissions());
+    }
+
+    private void seedOrderViewAllPermissions() {
+        seedMissingRows("ORDER_VIEW_ALL", buildOrderViewAllPermissions());
     }
 
     /**
@@ -174,6 +184,15 @@ public class DataSeeder {
         // GUEST: can create and verify their own payment but cannot use the admin view endpoints
         list.add(perm("GUEST",           "PAYMENT", "VIEW",   false));
 
+        return list;
+    }
+
+    private List<RolePermission> buildOrderViewAllPermissions() {
+        List<RolePermission> list = new ArrayList<>();
+        list.add(perm("BRANCH_MANAGER",  "ORDERS", "VIEW_ALL", true));
+        list.add(perm("EMPLOYEE",        "ORDERS", "VIEW_ALL", true));
+        list.add(perm("CUSTOMER",        "ORDERS", "VIEW_ALL", false));
+        list.add(perm("GUEST",           "ORDERS", "VIEW_ALL", false));
         return list;
     }
 

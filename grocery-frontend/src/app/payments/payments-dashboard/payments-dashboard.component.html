@@ -1,0 +1,201 @@
+<div class="payments-page">
+  <div *ngIf="permissionError" class="error-state">
+    <span class="error-icon">🚫</span>
+    <div>
+      <h3 style="margin:0 0 4px 0; font-size: 16px;">Access Denied</h3>
+      <p style="margin:0; font-size: 14px;">You don't have permission to view payments.</p>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!permissionError">
+    <!-- Header -->
+    <div class="page-header">
+      <h1>Payments</h1>
+      <div class="search-box">
+        <input type="text"
+               placeholder="Search by order ID, Razorpay ID, or phone..."
+               [(ngModel)]="searchQuery"
+               (ngModelChange)="applyFilters()" />
+      </div>
+    </div>
+
+    <!-- KPI cards row -->
+    <div class="kpi-row">
+      <div class="kpi-card kpi-green">
+        <div class="kpi-label">PAYMENT SUCCESS RATE</div>
+        <div class="kpi-value">{{ analytics?.successRate | number:'1.1-1' }}%</div>
+        <div class="kpi-sublabel">{{ analytics?.paidCount }} of {{ (analytics?.paidCount || 0) + (analytics?.failedCount || 0) }} attempts</div>
+      </div>
+
+      <div class="kpi-card kpi-emerald">
+        <div class="kpi-label">TOTAL PAID</div>
+        <div class="kpi-value">₹{{ (analytics?.totalPaidAmount || 0) / 100 | number:'1.0-0' }}</div>
+        <div class="kpi-sublabel">{{ analytics?.paidCount }} payments</div>
+      </div>
+
+      <div class="kpi-card kpi-red"
+           [class.active]="activeStatusFilter === 'FAILED'"
+           (click)="toggleStatusFilter('FAILED')">
+        <div class="kpi-label">FAILED AMOUNT</div>
+        <div class="kpi-value">₹{{ (analytics?.totalFailedAmount || 0) / 100 | number:'1.0-0' }}</div>
+        <div class="kpi-sublabel">{{ analytics?.failedCount }} failed attempts</div>
+      </div>
+
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-label">AVG RETRIES PER FAILURE</div>
+        <div class="kpi-value">{{ analytics?.avgAttemptsPerFailure | number:'1.1-1' }}</div>
+        <div class="kpi-sublabel">retry attempts</div>
+      </div>
+
+      <div class="kpi-card kpi-indigo"
+           [class.active]="activeStatusFilter === 'REFUNDED'"
+           (click)="toggleStatusFilter('REFUNDED')">
+        <div class="kpi-label">REFUNDED</div>
+        <div class="kpi-value">₹{{ (analytics?.totalRefundedAmount || 0) / 100 | number:'1.0-0' }}</div>
+        <div class="kpi-sublabel">last {{ dateRangeDays }} days</div>
+      </div>
+    </div>
+
+    <!-- Date range filter -->
+    <div class="filter-bar">
+      <span>From</span>
+      <input type="date" [(ngModel)]="fromDate" (change)="onDateRangeChange()" />
+      <span>To</span>
+      <input type="date" [(ngModel)]="toDate" (change)="onDateRangeChange()" />
+      <button class="quick-range-btn" (click)="setQuickRange(7)" [class.active]="dateRangeDays === 7">7D</button>
+      <button class="quick-range-btn" (click)="setQuickRange(30)" [class.active]="dateRangeDays === 30">30D</button>
+      <button class="quick-range-btn" (click)="setQuickRange(90)" [class.active]="dateRangeDays === 90">90D</button>
+
+      <div class="status-chips">
+        <span class="filter-label">Status:</span>
+        <button *ngFor="let s of statusOptions"
+                class="status-filter-chip"
+                [class.active]="activeStatusFilter === s.value"
+                [ngClass]="'chip-' + s.value.toLowerCase()"
+                (click)="toggleStatusFilter(s.value)">
+          {{ s.label }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Chart: Payment Status Breakdown -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Payment Status Breakdown</h3>
+        <span class="chart-subtitle">Daily paid vs failed vs pending over the selected range</span>
+      </div>
+      <div class="chart-canvas">
+        <canvas #chartHost></canvas>
+      </div>
+    </div>
+
+    <!-- Payments list table -->
+    <div class="payments-table-card">
+      <div class="table-header">
+        <h3>Payment Transactions</h3>
+        <span class="row-count">{{ filteredPayments.length }} of {{ payments.length }} payments</span>
+      </div>
+
+      <table class="payments-table">
+        <thead>
+          <tr>
+            <th>Payment ID</th>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Attempts</th>
+            <th>Razorpay Info</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let p of filteredPayments">
+            <tr class="payment-row">
+              <td>#{{ p.paymentId }}</td>
+              <td>
+                #{{ p.orderId }}
+                <span *ngIf="p.isGuestOrder" class="guest-badge">GUEST</span>
+              </td>
+              <td>
+                <div>{{ p.customerName }}</div>
+                <div class="sub-text">{{ p.customerPhone }}</div>
+              </td>
+              <td class="amount-cell">₹{{ p.amount / 100 | number:'1.2-2' }}</td>
+              <td>
+                <span class="status-chip" [ngClass]="'chip-' + p.status.toLowerCase()">{{ p.status }}</span>
+              </td>
+              <td>{{ p.attempts }}</td>
+              <td class="mono-cell">
+                <div class="sub-text" *ngIf="p.razorpayOrderId">RO: {{ p.razorpayOrderId }}</div>
+                <div class="sub-text" *ngIf="p.razorpayPaymentId">PMT: {{ p.razorpayPaymentId }}</div>
+                <div class="sub-text" *ngIf="!p.razorpayOrderId">-</div>
+              </td>
+              <td>{{ p.createdAt | date:'d MMM, HH:mm' }}</td>
+              <td>
+                <button class="link-btn" (click)="toggleTimeline(p)">
+                  {{ p.timelineExpanded ? 'Hide Timeline' : 'View Timeline' }}
+                  <span class="chevron" [class.expanded]="p.timelineExpanded">▼</span>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Inline expanded timeline row — spans all columns of the parent row -->
+            <tr *ngIf="p.timelineExpanded" class="timeline-expanded-row">
+              <td colspan="9">
+                <div class="timeline-panel">
+                  <!-- Loading -->
+                  <div *ngIf="p.timelineLoading" class="timeline-loading">Loading timeline...</div>
+
+                  <!-- Error -->
+                  <div *ngIf="p.timelineError" class="timeline-error">{{ p.timelineError }}</div>
+
+                  <!-- Empty state -->
+                  <div *ngIf="p.timeline && p.timeline.effectiveStatus === 'NOT_APPLICABLE'" class="timeline-empty">
+                    No payment records for this order.
+                  </div>
+
+                  <!-- Populated timeline -->
+                  <ng-container *ngIf="p.timeline && p.timeline.attempts.length > 0">
+                    <div class="timeline-heading">Payment Timeline — Order #{{ p.orderId }}</div>
+                    <div *ngFor="let attempt of p.timeline.attempts; let i = index" class="timeline-row-item">
+                      <div class="timeline-dot" [ngClass]="'dot-' + attempt.status.toLowerCase()"></div>
+                      <div class="timeline-body">
+                        <div class="timeline-line-1">
+                          <span class="timeline-label">Attempt #{{ i + 1 }}</span>
+                          <span class="status-chip" [ngClass]="'chip-' + attempt.status.toLowerCase()">{{ attempt.status }}</span>
+                          <span class="timeline-time">{{ attempt.createdAt | date:'d MMM, HH:mm' }}</span>
+                        </div>
+                        <div *ngIf="attempt.razorpayPaymentId" class="timeline-line-2">
+                          Payment ID: <code>{{ attempt.razorpayPaymentId }}</code>
+                        </div>
+                        <div *ngIf="attempt.failureReason" class="timeline-line-2 timeline-error">
+                          Reason: {{ attempt.failureReason }}
+                        </div>
+                        <div *ngIf="attempt.verifiedAt" class="timeline-line-2">
+                          Verified at: {{ attempt.verifiedAt | date:'d MMM, HH:mm' }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Summary strip at the bottom of the timeline -->
+                    <div class="timeline-summary">
+                      <div><strong>Razorpay Order ID:</strong> <code>{{ p.timeline.attempts[0].razorpayOrderId }}</code></div>
+                      <div><strong>Total Attempts:</strong> {{ p.timeline.attempts.length }}</div>
+                      <div><strong>Order Total:</strong> ₹{{ p.timeline.totalAmount / 100 | number:'1.2-2' }}</div>
+                    </div>
+                  </ng-container>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+
+          <tr *ngIf="filteredPayments.length === 0">
+            <td colspan="9" class="empty-state">No payments match the current filters.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

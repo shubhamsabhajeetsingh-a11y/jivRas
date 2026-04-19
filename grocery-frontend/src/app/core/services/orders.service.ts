@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { PaymentStatus, OrderPaymentTimeline } from '../../models/payment.model';
@@ -29,6 +29,8 @@ export interface AdminOrderResponse {
   latestPaymentStatus?: PaymentStatus | null;
   paymentDetailsExpanded?: boolean;
   paymentTimeline?: OrderPaymentTimeline;
+  isGuest?: boolean;          // true when the order was placed without an account
+  customerId?: number | null; // null for guest orders
 }
 
 @Injectable({
@@ -40,8 +42,16 @@ export class OrdersService {
 
   constructor(private http: HttpClient) {}
 
-  getOrdersGroupedByCategory(): Observable<{ [category: string]: AdminOrderResponse[] }> {
-    return this.http.get<{ [category: string]: AdminOrderResponse[] }>(`${this.apiUrl}/grouped-by-category`);
+  /**
+   * Fetch orders grouped by product category.
+   * @param guestOnly null = all, true = guests only, false = registered only
+   */
+  getOrdersGroupedByCategory(guestOnly?: boolean | null): Observable<{ [category: string]: AdminOrderResponse[] }> {
+    let params = new HttpParams();
+    // Only set the param if a value is explicitly requested
+    if (guestOnly === true)  params = params.set('guestOnly', 'true');
+    if (guestOnly === false) params = params.set('guestOnly', 'false');
+    return this.http.get<{ [category: string]: AdminOrderResponse[] }>(`${this.apiUrl}/grouped-by-category`, { params });
   }
 
   updateOrderStatus(id: number, status: string): Observable<any> {
