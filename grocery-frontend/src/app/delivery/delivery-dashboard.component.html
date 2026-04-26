@@ -1,0 +1,76 @@
+<div class="delivery-dashboard">
+
+  <div class="page-header">
+    <h1>🚚 My Deliveries</h1>
+    <p class="subtitle">Orders assigned to you — out for delivery</p>
+    <button class="refresh-btn" (click)="loadDeliveries()" [disabled]="loading">↺ Refresh</button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="state-msg">Loading your deliveries...</div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="state-msg error-msg">
+    {{ error }}
+    <button class="retry-btn" (click)="loadDeliveries()">Retry</button>
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!loading && !error && orders.length === 0" class="state-msg empty-msg">
+    <div class="empty-icon">📦</div>
+    <div>No deliveries assigned to you right now.</div>
+  </div>
+
+  <!-- Order cards -->
+  <div *ngIf="!loading && !error && orders.length > 0" class="order-list">
+
+    <div *ngFor="let order of orders" class="order-card">
+
+      <!-- Card header: order ID + status -->
+      <div class="card-header">
+        <span class="order-id">Order #{{ order.orderId }}</span>
+        <span class="status-badge">{{ order.orderStatus }}</span>
+      </div>
+
+      <!-- Customer contact -->
+      <div class="customer-info">
+        <div class="customer-name">{{ order.customerName }}</div>
+        <div class="customer-phone">📞 {{ order.mobile }}</div>
+      </div>
+
+      <!-- Delivery address -->
+      <div class="address-info">
+        📍 {{ order.addressLine }}, {{ order.city }}, {{ order.state }} — {{ order.pincode }}
+      </div>
+
+      <!-- Items summary -->
+      <div class="items-summary">
+        <span class="item-name">{{ order.firstItemName }}</span>
+        <span *ngIf="order.additionalItemCount > 0" class="more-items">
+          + {{ order.additionalItemCount }} more
+        </span>
+      </div>
+
+      <!-- Amount + ETA -->
+      <div class="order-meta">
+        <span class="total">₹{{ order.totalAmount | number:'1.2-2' }}</span>
+        <span *ngIf="order.estimatedDeliveryTime" class="eta">
+          ETA: {{ order.estimatedDeliveryTime | date:'d MMM, HH:mm' }}
+        </span>
+        <span *ngIf="!order.estimatedDeliveryTime" class="eta eta-unknown">ETA: not set</span>
+      </div>
+
+      <!-- Mark Delivered button -->
+      <div class="card-footer">
+        <button
+          class="btn-delivered"
+          [disabled]="markingOrderId === order.orderId"
+          (click)="markDelivered(order.orderId)">
+          {{ markingOrderId === order.orderId ? 'Marking...' : '✅ Mark Delivered' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>

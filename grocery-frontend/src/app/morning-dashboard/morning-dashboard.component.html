@@ -1,0 +1,80 @@
+<div class="dashboard-wrapper">
+
+  <div class="dash-header">
+    <div class="dash-title">
+      <h1>Dashboard Panel</h1>
+      <p class="dash-subtitle">Today's snapshot — {{ today }}</p>
+    </div>
+    <div class="dash-actions">
+      <button class="refresh-btn" (click)="load()" [disabled]="loading">
+        {{ loading ? 'Loading...' : 'Refresh' }}
+      </button>
+      <!-- back button removed — navigation handled by parent tab sidebar -->
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-banner">{{ error }}</div>
+
+  <div *ngIf="loading && !summary" class="loading-state">Loading summary...</div>
+
+  <ng-container *ngIf="summary">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon">🧾</div>
+        <div class="kpi-value">{{ summary.todayOrders }}</div>
+        <div class="kpi-label">Orders Today</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-value">₹{{ summary.todayRevenue | number:'1.0-0' }}</div>
+        <div class="kpi-label">Revenue Today</div>
+      </div>
+      <div class="kpi-card kpi-warn">
+        <div class="kpi-icon">⏳</div>
+        <div class="kpi-value">{{ summary.pendingOrders }}</div>
+        <div class="kpi-label">Pending Orders</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">👤</div>
+        <div class="kpi-value">{{ summary.todayNewCustomers }}</div>
+        <div class="kpi-label">New Customers Today</div>
+      </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <div class="section">
+      <h2 class="section-title">
+        Low Stock Alerts
+        <span class="badge" [class.badge-ok]="summary.lowStockAlerts.length === 0">
+          {{ summary.lowStockAlerts.length }}
+        </span>
+      </h2>
+
+      <div *ngIf="summary.lowStockAlerts.length === 0" class="no-alerts">
+        All stock levels are healthy.
+      </div>
+
+      <table *ngIf="summary.lowStockAlerts.length > 0" class="alert-table">
+        <thead>
+          <tr>
+            <th>Branch</th>
+            <th>Product</th>
+            <th>Current Stock (kg)</th>
+            <th>Reorder Threshold (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let alert of summary.lowStockAlerts" class="alert-row">
+            <td>{{ alert.branchName }}</td>
+            <td>{{ alert.productName }}</td>
+            <td class="stock-critical">{{ alert.currentStock }}</td>
+            <td>{{ alert.reorderThreshold }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </ng-container>
+</div>

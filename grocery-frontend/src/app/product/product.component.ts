@@ -20,7 +20,8 @@ export class ProductComponent implements OnInit {
   searchTerm: string = '';
   isEmployee = false;
   isLoggedIn = false;
-  isGuest = false;   // GUEST role has no registered account; hide My Orders for them
+  isGuest = false;         // GUEST role has no registered account; hide My Orders for them
+  isDeliveryAgent = false; // DELIVERY_AGENT role — show My Deliveries link, hide My Orders
   cartItemCount = 0;
   addedProductId: number | null = null; // For showing "Added!" feedback
 
@@ -37,16 +38,19 @@ export class ProductComponent implements OnInit {
       const role = localStorage.getItem('userRole');
 
       // Staff must not browse the customer-facing product page
+      if (role === 'SUPER_ADMIN') {
+        this.router.navigate(['/dashboard']);
+        return;
+      }
       if (role === 'EMPLOYEE' || role === 'ADMIN' || role === 'BRANCH_MANAGER') {
         this.router.navigate(['/inventory-dashboard']);
         return;
       }
 
-      this.isEmployee = false;
-      this.isLoggedIn = !!localStorage.getItem('accessToken');
-      // Determine if this is a guest session (no account, no JWT role)
-      const role = localStorage.getItem('userRole');
-      this.isGuest = !role || role === 'GUEST';
+      this.isEmployee      = false;
+      this.isLoggedIn      = !!localStorage.getItem('accessToken');
+      this.isGuest         = !role || role === 'GUEST';
+      this.isDeliveryAgent = role === 'DELIVERY_AGENT';
       this.loadProducts();
 
       // Subscribe to cart count for badge

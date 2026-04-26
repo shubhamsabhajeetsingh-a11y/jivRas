@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 0; background: #F5F3EE; font-family: 'DM Sans', sans-serif; height: 150px; overflow: hidden; }
+  .sidebar { width: 200px; background: #D57937; display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden; }
+  .sidebar::before { content:''; position:absolute; bottom:-40px; right:-40px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.04); pointer-events:none; }
+  .brand { padding: 16px 16px 12px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.04em; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .brand span { opacity: 0.55; font-weight: 400; display: block; font-size: 10px; margin-top: 1px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .cat-label { padding: 10px 16px 4px; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); font-family: 'Syne', sans-serif; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; color: rgba(255,255,255,0.65); font-size: 13px; font-weight: 500; transition: background 0.2s; position: relative; }
+  .nav-item.active { background: rgba(255,255,255,0.14); color: #fff; font-weight: 600; }
+  .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:20px; background:#D4820A; border-radius:0 2px 2px 0; }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .count { margin-left:auto; font-size:10px; background:rgba(255,255,255,0.12); padding:1px 6px; border-radius:10px; color:rgba(255,255,255,0.7); }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="brand"><span class="jiv" style="color:#fff;font-family:'Syne',sans-serif;">Jiv<span style="color:rgba(255,255,255,0.7)">Ras</span></span><span>Inventory</span></div>
+  <div class="cat-label">Categories</div>
+  <div class="nav-item active"><span>🌾</span> Grains <span class="count">8</span></div>
+  <div class="nav-item"><span>🫙</span> Oils &amp; Fats <span class="count">5</span></div>
+  <div class="nav-item"><span>🥛</span> Dairy <span class="count">3</span></div>
+  <div class="nav-item"><span>🍯</span> Sweeteners <span class="count">4</span></div>
+</div>
+</body>
+</html>

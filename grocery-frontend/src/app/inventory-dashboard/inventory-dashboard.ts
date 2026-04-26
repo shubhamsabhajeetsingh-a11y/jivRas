@@ -9,6 +9,7 @@ import { OrdersComponent } from '../orders/orders.component';
 import { RoleDefinitionComponent } from '../role-definition/role-definition.component';
 import { ReportsComponent } from '../reports/reports.component';
 import { PaymentsDashboardComponent } from '../payments/payments-dashboard/payments-dashboard.component';
+import { MorningDashboardComponent } from '../morning-dashboard/morning-dashboard.component';
 import { UserService } from '../core/services/user.service';
 import { InventoryService } from '../core/services/inventory.service';
 import { BranchService } from '../core/services/branch.service';
@@ -30,7 +31,7 @@ export interface CategoryMeta {
 @Component({
   selector: 'app-inventory-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent, RoleDefinitionComponent, ReportsComponent, PaymentsDashboardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, UserProfile, OrdersComponent, RoleDefinitionComponent, ReportsComponent, PaymentsDashboardComponent, MorningDashboardComponent],
   templateUrl: './inventory-dashboard.html',
   styleUrl: './inventory-dashboard.css',
 })
@@ -61,7 +62,7 @@ export class InventoryDashboard implements OnInit {
 
   currentView: 'card' | 'table' = 'card';
   currentCat: string = 'all';
-  activeTab: 'inventory' | 'orders' | 'reports' | 'payments' | 'create-role' | 'create-branch' | 'role-definition' = 'inventory';
+  activeTab: 'dashboard' | 'inventory' | 'orders' | 'reports' | 'payments' | 'create-role' | 'create-branch' | 'role-definition' = 'inventory';
 
   // ── Shared Search ──────────────────────────────────────────────────
   searchPlaceholders: Record<string, string> = {
@@ -73,6 +74,10 @@ export class InventoryDashboard implements OnInit {
 
   get isAdminUser(): boolean {
     return this.currentUser?.role === 'ADMIN' || this.currentUser?.role === 'SUPER_ADMIN';
+  }
+
+  get isSuperAdmin(): boolean {
+    return this.currentUser?.role === 'SUPER_ADMIN';
   }
 
   get searchPlaceholder(): string {
@@ -295,6 +300,12 @@ export class InventoryDashboard implements OnInit {
             ? undefined
             : (profile.branchId > 0 ? profile.branchId : undefined);
 
+          // Auto-activate Dashboard tab for SUPER_ADMIN — their home tab.
+          // Only switch if no explicit tab param already changed activeTab away from the default.
+          if (this.isSuperAdmin && this.activeTab === 'inventory') {
+            this.activeTab = 'dashboard';
+          }
+
           if (this.isAdminUser) {
             // loadAllBranches() will set selectedBranchId then call loadInventory()
             // Do NOT call loadInventory() here — selectedBranchId is still undefined
@@ -431,7 +442,7 @@ export class InventoryDashboard implements OnInit {
     this.cdr.detectChanges();
   }
 
-  setTab(tab: 'inventory' | 'orders' | 'reports' | 'payments' | 'create-role' | 'create-branch' | 'role-definition'): void {
+  setTab(tab: 'dashboard' | 'inventory' | 'orders' | 'reports' | 'payments' | 'create-role' | 'create-branch' | 'role-definition'): void {
     this.activeTab = tab;
     
     // Clear global search everywhere on tab change

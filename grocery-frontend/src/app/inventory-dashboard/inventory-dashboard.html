@@ -11,12 +11,20 @@
 
   <!-- ── Sidebar ── -->
   <nav class="sidebar">
-    <div class="brand">
-      Dashboard
-      <span>PANEL</span>
-    </div>
+    <!-- SUPER_ADMIN: clicking brand returns to Dashboard tab -->
+    <a *ngIf="isSuperAdmin" (click)="setTab('dashboard')" style="text-decoration: none; cursor: pointer;">
+      <div class="brand">Dashboard <span>PANEL</span></div>
+    </a>
+    <!-- Other roles: static brand, no navigation -->
+    <div *ngIf="!isSuperAdmin" class="brand">Dashboard <span>PANEL</span></div>
 
     <div class="nav-menu" style="margin-top: 20px;">
+      <!-- Dashboard tab — SUPER_ADMIN only, shown at top -->
+      <div class="nav-item nav-item-admin" *ngIf="isSuperAdmin"
+           [class.active]="activeTab === 'dashboard'"
+           (click)="setTab('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
       <div class="nav-item" [class.active]="activeTab === 'inventory'" (click)="setTab('inventory')">
         <span class="nav-icon">📦</span> Inventory
       </div>
@@ -50,6 +58,7 @@
            (click)="setTab('role-definition')">
         <span class="nav-icon">🔐</span> Role Definition
       </div>
+      <!-- Dashboard Panel nav item replaced by the tab at the top of this list -->
     </div>
 
     <ng-container *ngIf="activeTab === 'inventory'">
@@ -96,6 +105,7 @@
     <!-- Topbar -->
     <div class="topbar">
       <div class="topbar-title">
+         <ng-container *ngIf="activeTab === 'dashboard'">Dashboard</ng-container>
          <ng-container *ngIf="activeTab === 'inventory'">Inventory</ng-container>
          <ng-container *ngIf="activeTab === 'orders'">Orders</ng-container>
          <ng-container *ngIf="activeTab === 'reports'">Reports</ng-container>
@@ -175,6 +185,9 @@
 
     <!-- Content area -->
     <div class="content">
+
+      <!-- ── Dashboard Tab (SUPER_ADMIN only) ── -->
+      <app-morning-dashboard *ngIf="activeTab === 'dashboard' && isSuperAdmin"></app-morning-dashboard>
 
       <!-- ── Inventory Tab ── -->
       <ng-container *ngIf="activeTab === 'inventory'">

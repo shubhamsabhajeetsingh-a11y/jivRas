@@ -53,10 +53,16 @@ export class LoginComponent implements OnInit {
           localStorage.setItem('userRole', response.role);
           localStorage.removeItem('guestId');
 
-          if (response.role === 'EMPLOYEE' || response.role === 'ADMIN' || response.role === 'BRANCH_MANAGER') {
+          const role = response.role;
+          if (role === 'SUPER_ADMIN') {
+            // Dashboard tab lives inside /inventory-dashboard; it auto-activates for SUPER_ADMIN
             this.router.navigate(['/inventory-dashboard']);
+          } else if (role === 'BRANCH_MANAGER' || role === 'EMPLOYEE') {
+            this.router.navigate(['/inventory-dashboard']);
+          } else if (role === 'DELIVERY_AGENT') {
+            this.router.navigate(['/delivery']);
           } else {
-            this.router.navigate(['/products']);
+            this.router.navigate(['/products']); // CUSTOMER, GUEST, fallback
           }
         },
         error: (err) => {

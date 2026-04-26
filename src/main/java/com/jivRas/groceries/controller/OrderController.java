@@ -16,12 +16,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.annotation.ModuleAction;
+import com.jivRas.groceries.dto.AssignAgentRequest;
 import com.jivRas.groceries.dto.CheckoutRequest;
 import com.jivRas.groceries.dto.AdminOrderResponse;
 import com.jivRas.groceries.dto.order.CustomerOrderSummaryDto;
+import com.jivRas.groceries.dto.order.DeliveryOrderDto;
+import com.jivRas.groceries.entity.EmployeeUser;
 import com.jivRas.groceries.entity.Order;
 import com.jivRas.groceries.entity.OrderStatusHistory;
 import com.jivRas.groceries.exception.ResourceNotFoundException;
+import com.jivRas.groceries.repository.EmployeeUserRepository;
 import com.jivRas.groceries.repository.OrderRepository;
 import com.jivRas.groceries.repository.OrderStatusHistoryRepository;
 import com.jivRas.groceries.service.InvoiceService;
@@ -46,6 +50,8 @@ public class OrderController {
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final InvoiceService invoiceService;
+    // Phase 6: used to resolve agent username → numeric ID for delivery endpoints
+    private final EmployeeUserRepository employeeUserRepository;
 
     /**
      * POST /api/orders/checkout
@@ -198,6 +204,93 @@ public class OrderController {
     public ResponseEntity<?> getOrderTimeline(@PathVariable Long id) {
         List<OrderStatusHistory> timeline = orderStatusHistoryRepository.findByOrderIdOrderByChangedAtAsc(id);
         return ResponseEntity.ok(timeline);
+    }
+
+    // ──────────────────────────── Phase 6: Delivery Agent Endpoints ───────────
+
+    /**
+     * PATCH /api/orders/{orderId}/assign-agent
+     * Admin / branch-manager assigns a delivery agent to an order and sets the ETA.
+     * Transitions order status to OUT_FOR_DELIVERY and records a timeline entry.
+     * Access: BRANCH_MANAGER and above (ORDERS:EDIT permission).
+     */
+    @ModuleAction(module = "ORDERS", action = "EDIT")
+    @PatchMapping("/{orderId}/assign-agent")
+    public ResponseEntity<?> assignAgent(
+            @PathVariable Long orderId,
+            @RequestBody AssignAgentRequest request,
+            Authentication authentication) {
+
+        // Delegate business logic (validation + status change) to the service
+        Order updated = orderService.assignAgent(
+                orderId, request.getAgentId(), request.getEstimatedDeliveryTime());
+
+        // Record the OUT_FOR_DELIVERY transition in the status timeline
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setOrderId(orderId);
+        history.setStatus("OUT_FOR_DELIVERY");
+        history.setChangedBy(authentication.getName());
+        orderStatusHistoryRepository.save(history);
+
+        return ResponseEntity.ok(Map.of(
+                "orderId", orderId,
+                "assignedAgentId", request.getAgentId(),
+                "newStatus", updated.getOrderStatus(),
+                "message", "Agent assigned and order is now OUT_FOR_DELIVERY"
+        ));
+    }
+
+    /**
+     * GET /api/orders/my-deliveries
+     * Returns orders currently assigned to the calling delivery agent that are OUT_FOR_DELIVERY.
+     * Access: DELIVERY_AGENT only (ORDERS:VIEW_DELIVERIES permission).
+     */
+    @ModuleAction(module = "ORDERS", action = "VIEW_DELIVERIES")
+    @GetMapping("/my-deliveries")
+    public ResponseEntity<List<DeliveryOrderDto>> getMyDeliveries(Authentication auth) {
+
+        // auth.getName() returns the employee's username — look up their numeric DB id
+        // (deliveryAgentId on orders stores the numeric EmployeeUser.id, not the username)
+        EmployeeUser agent = employeeUserRepository.findByUsername(auth.getName())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Delivery agent not found: " + auth.getName()));
+
+        return ResponseEntity.ok(orderService.getMyDeliveries(agent.getId()));
+    }
+
+    /**
+     * PATCH /api/orders/{orderId}/mark-delivered
+     * Delivery agent marks their assigned order as DELIVERED.
+     * Only the agent whose ID matches order.deliveryAgentId may call this — enforced in the service.
+     * Records a timeline entry noting delivery by the agent.
+     * Access: DELIVERY_AGENT only (ORDERS:MARK_DELIVERED permission).
+     */
+    @ModuleAction(module = "ORDERS", action = "MARK_DELIVERED")
+    @PatchMapping("/{orderId}/mark-delivered")
+    public ResponseEntity<?> markDelivered(
+            @PathVariable Long orderId,
+            Authentication auth) {
+
+        // Resolve the agent's numeric ID — same lookup pattern as getMyDeliveries()
+        EmployeeUser agent = employeeUserRepository.findByUsername(auth.getName())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Delivery agent not found: " + auth.getName()));
+
+        // Service validates ownership (agent == assigned agent) and current status
+        orderService.markDelivered(orderId, agent.getId());
+
+        // Record "Delivered by agent" in the timeline for audit trail
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setOrderId(orderId);
+        history.setStatus("DELIVERED");
+        history.setChangedBy("Agent:" + auth.getName());
+        orderStatusHistoryRepository.save(history);
+
+        return ResponseEntity.ok(Map.of(
+                "orderId", orderId,
+                "newStatus", "DELIVERED",
+                "message", "Order marked as delivered"
+        ));
     }
 
     // ──────────────────────────── Helpers ──────────────────────────────────────

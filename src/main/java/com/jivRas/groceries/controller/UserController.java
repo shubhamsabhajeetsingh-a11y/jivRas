@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jivRas.groceries.annotation.ModuleAction;
+import com.jivRas.groceries.service.CustomerService;
 import com.jivRas.groceries.service.RsaKeyService;
 
 import com.jivRas.groceries.config.JwtService;
@@ -55,6 +56,8 @@ public class UserController {
     private final BranchRepository branchRepository;
     private final RsaKeyService rsaKeyService;
     private final RolePermissionRepository rolePermissionRepository;
+    // Phase 5: links past guest orders to the new account after registration
+    private final CustomerService customerService;
 
     public UserController(CustomerRepository customerRepository, EmployeeUserRepository employeeUserRepository,
             PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
@@ -62,7 +65,8 @@ public class UserController {
             DaoAuthenticationProvider authenticationProvider, RefreshTokenRepository refreshTokenRepository,
             BranchRepository branchRepository,
             RsaKeyService rsaKeyService,
-            RolePermissionRepository rolePermissionRepository) {
+            RolePermissionRepository rolePermissionRepository,
+            CustomerService customerService) {
         this.customerRepository = customerRepository;
         this.employeeUserRepository = employeeUserRepository;
         this.passwordEncoder = passwordEncoder;
@@ -73,6 +77,7 @@ public class UserController {
         this.branchRepository = branchRepository;
         this.rsaKeyService = rsaKeyService;
         this.rolePermissionRepository = rolePermissionRepository;
+        this.customerService = customerService;
     }
 
     private boolean usernameExists(String username) {
@@ -214,7 +219,17 @@ public class UserController {
         customer.setRole("CUSTOMER");
         customer.setAccountCreated(true);
 
-        customerRepository.save(customer);
+        // Save first so the DB assigns the auto-generated customer ID
+        Customer savedCustomer = customerRepository.save(customer);
+
+        // Phase 5: link any guest orders placed with this phone number to the new account.
+        // Uses the numeric customer ID (not username) — matches the convention in OrderService.getMyOrders().
+        int linkedCount = customerService.linkGuestOrders(request.getMobile(), savedCustomer.getId());
+        if (linkedCount > 0) {
+            // Log for observability; a future event/notification can be added via the TODO in CustomerService
+            System.out.println("[Phase 5] Linked " + linkedCount + " guest order(s) to new customer ID " + savedCustomer.getId());
+        }
+
         return ResponseEntity.ok("Customer registered successfully");
     }
 

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 20px; background: rgba(0,0,0,0.35); font-family: 'DM Sans', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 110px; }
+  .modal-box { background: white; padding: 28px 32px; border-radius: 16px; width: 320px; text-align: center; box-shadow: 0 24px 48px rgba(0,0,0,0.2); animation: slideUp 0.25s ease-out; }
+  @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-icon { font-size: 2.2rem; margin-bottom: 10px; }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px; }
+  .modal-msg { color: #7A7A7A; font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
+  .modal-actions { display: flex; justify-content: center; gap: 10px; }
+  .btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .btn-cancel { background: #f1f3f5; color: #495057; }
+  .btn-confirm { background: #FDECEA; color: #C0392B; }
+</style>
+</head>
+<body>
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">Delete Product?</div>
+    <div class="modal-msg">This will permanently remove <strong>Groundnut Oil</strong> from inventory. This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel">Cancel</button>
+      <button class="btn btn-confirm">Yes, Delete</button>
+    </div>
+  </div>
+</body>
+</html>

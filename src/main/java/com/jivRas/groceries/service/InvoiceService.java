@@ -26,6 +26,10 @@ public class InvoiceService {
     private static final float COL_RATE     = MARGIN + 330;
     private static final float COL_SUBTOTAL = MARGIN + 420;
 
+    // Label start for the GST breakdown rows — placed past the middle of the page
+    // so there is a clear visual gap before the right-aligned amounts at COL_SUBTOTAL
+    private static final float COL_GST_LABEL = MARGIN + 200;
+
     public byte[] generateInvoice(Order order) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
@@ -41,13 +45,23 @@ public class InvoiceService {
                 drawLine(cs, MARGIN, y, PAGE_WIDTH - MARGIN, y);
                 y -= 20;
 
-                // ── Invoice meta (ID left, Date right) ───────────────────────
-                writeText(cs, PDType1Font.HELVETICA_BOLD, 11, MARGIN, y, "Invoice ID: #" + order.getId());
+                // ── Invoice meta ──────────────────────────────────────────────
+                // Invoice number in GST-compliant format: INV-{orderId}-{yyyyMMdd}
+                String invoiceDateTag = order.getOrderDate() != null
+                        ? order.getOrderDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                        : "00000000";
+                String invoiceNumber = "INV-" + order.getId() + "-" + invoiceDateTag;
+                writeText(cs, PDType1Font.HELVETICA_BOLD, 11, MARGIN, y, "Invoice #: " + invoiceNumber);
 
-                String dateStr = order.getOrderDate() != null
-                        ? order.getOrderDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))
+                // Display date in human-readable form (no time component on a GST invoice)
+                String displayDate = order.getOrderDate() != null
+                        ? order.getOrderDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
                         : "N/A";
-                writeText(cs, PDType1Font.HELVETICA, 11, PAGE_WIDTH - MARGIN - 180, y, "Date: " + dateStr);
+                writeText(cs, PDType1Font.HELVETICA, 11, PAGE_WIDTH - MARGIN - 180, y, "Date: " + displayDate);
+                y -= 16;
+
+                // GSTIN placeholder — TODO: replace with real GSTIN once GST registration is complete
+                writeText(cs, PDType1Font.HELVETICA, 10, MARGIN, y, "GSTIN: 27XXXXX0000X1ZX");
                 y -= 24;
 
                 // ── Customer / Bill-To ────────────────────────────────────────
@@ -93,15 +107,53 @@ public class InvoiceService {
                     y -= 18;
                 }
 
-                // ── Separator before total ────────────────────────────────────
+                // -- Separator before GST breakdown --
                 y -= 4;
                 drawLine(cs, MARGIN, y, PAGE_WIDTH - MARGIN, y);
                 y -= 18;
 
-                // ── Total row (right-aligned) ─────────────────────────────────
-                writeText(cs, PDType1Font.HELVETICA_BOLD, 12, COL_RATE,     y, "Total:");
-                writeText(cs, PDType1Font.HELVETICA_BOLD, 12, COL_SUBTOTAL, y,
-                        "Rs. " + String.format("%.2f", order.getTotalAmount()));
+                // ── GST Breakdown ─────────────────────────────────────────────
+                // Recompute subtotal from items (qty × price) — source of truth,
+                // avoids any rounding drift that may exist in order.getTotalAmount()
+                double subtotal = 0.0;
+                for (OrderItem item : order.getItems()) {
+                    subtotal += item.getQuantityKg() * item.getPricePerKg();
+                }
+
+                // calculateGst returns [cgst, sgst, totalGst]; slab chosen by subtotal value
+                double[] gst       = calculateGst(subtotal);
+                double   cgst      = gst[0];
+                double   sgst      = gst[1];
+                double   grandTotal = subtotal + gst[2]; // subtotal + CGST + SGST
+
+                // Label text reflects the applicable slab so the customer can verify
+                String cgstLabel = (subtotal > 1000.0) ? "CGST (6%):"   : "CGST (2.5%):";
+                String sgstLabel = (subtotal > 1000.0) ? "SGST (6%):"   : "SGST (2.5%):";
+
+                // Subtotal row (pre-GST amount)
+                writeText(cs, PDType1Font.HELVETICA, 11, COL_GST_LABEL, y, "Subtotal (before GST):");
+                writeText(cs, PDType1Font.HELVETICA, 11, COL_SUBTOTAL,  y, "Rs. " + String.format("%.2f", subtotal));
+                y -= 16;
+
+                // CGST row
+                writeText(cs, PDType1Font.HELVETICA, 11, COL_GST_LABEL, y, cgstLabel);
+                writeText(cs, PDType1Font.HELVETICA, 11, COL_SUBTOTAL,  y, "Rs. " + String.format("%.2f", cgst));
+                y -= 16;
+
+                // SGST row
+                writeText(cs, PDType1Font.HELVETICA, 11, COL_GST_LABEL, y, sgstLabel);
+                writeText(cs, PDType1Font.HELVETICA, 11, COL_SUBTOTAL,  y, "Rs. " + String.format("%.2f", sgst));
+                y -= 10;
+
+                // ── Grand total separator and row ─────────────────────────────
+                drawLine(cs, MARGIN, y, PAGE_WIDTH - MARGIN, y);
+                y -= 16;
+
+                // Grand total = subtotal + CGST + SGST (bold to draw the eye)
+                writeText(cs, PDType1Font.HELVETICA_BOLD, 12, COL_GST_LABEL, y, "TOTAL (incl. GST):");
+                writeText(cs, PDType1Font.HELVETICA_BOLD, 12, COL_SUBTOTAL,  y, "Rs. " + String.format("%.2f", grandTotal));
+                y -= 6;
+                drawLine(cs, MARGIN, y, PAGE_WIDTH - MARGIN, y);
 
                 // ── Footer ────────────────────────────────────────────────────
                 float footerY = MARGIN + 20;
@@ -121,6 +173,40 @@ public class InvoiceService {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Calculates CGST, SGST, and combined GST for a given pre-tax order subtotal.
+     *
+     * <p>GST slabs applied:
+     * <ul>
+     *   <li>Subtotal ≤ ₹1000 — standard grocery rate: 5% total (2.5% CGST + 2.5% SGST)</li>
+     *   <li>Subtotal  > ₹1000 — higher rate: 12% total (6% CGST + 6% SGST)</li>
+     * </ul>
+     *
+     * @param itemTotal pre-GST sum of all items (quantityKg × pricePerKg)
+     * @return double[3] → [cgst, sgst, totalGst]
+     */
+    private double[] calculateGst(double itemTotal) {
+
+        double cgstRate;
+        double sgstRate;
+
+        if (itemTotal > 1000.0) {
+            // Higher slab: 12% total (6% CGST + 6% SGST) for orders above ₹1000
+            cgstRate = 0.06;
+            sgstRate = 0.06;
+        } else {
+            // Standard grocery slab: 5% total (2.5% CGST + 2.5% SGST)
+            cgstRate = 0.025;
+            sgstRate = 0.025;
+        }
+
+        double cgst     = itemTotal * cgstRate;
+        double sgst     = itemTotal * sgstRate;
+        double totalGst = cgst + sgst;
+
+        return new double[]{cgst, sgst, totalGst};
+    }
 
     /** Writes a single text string and returns the same y (for fluent chaining). */
     private float writeText(PDPageContentStream cs, PDType1Font font, float size,

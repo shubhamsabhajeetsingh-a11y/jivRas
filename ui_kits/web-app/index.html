@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JivRas — Web App UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="Header.jsx"></script>
+<script type="text/babel" src="ProductCard.jsx"></script>
+<script type="text/babel" src="Sidebar.jsx"></script>
+<script type="text/babel" src="CartPanel.jsx"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #F5F3EE; color: #1A1A1A; min-height: 100vh; }
+  .bg-blur { position: fixed; inset: 0; background-image: url('../../assets/background.jpeg'); background-size: cover; background-position: center; filter: blur(8px); transform: scale(1.08); z-index: -1; }
+  .bg-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.15); z-index: -1; }
+  button { font-family: inherit; }
+</style>
+</head>
+<body>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const PRODUCTS = [
+  { id: 1, name: 'Groundnut Oil', description: 'Cold-pressed, unrefined. Rich in natural vitamins.', price: 180, stock: 48, emoji: '🫙', imgBg: '#FEF3DC', category: 'Oils & Fats' },
+  { id: 2, name: 'Jaggery Powder', description: 'Unrefined sweetener with natural molasses. No additives.', price: 95, stock: 6, emoji: '🍯', imgBg: '#FEF3DC', category: 'Sweeteners' },
+  { id: 3, name: 'Adesi Cow Ghee', description: 'Pure bilona-method ghee from grass-fed desi cows.', price: 620, stock: 2, emoji: '🥛', imgBg: '#E8F0EA', category: 'Dairy' },
+  { id: 4, name: 'Wheat Flour', description: 'Stone-ground whole wheat. High fibre, full-bodied flavour.', price: 45, stock: 80, emoji: '🌾', imgBg: '#F5F3EE', category: 'Grains & Pulses' },
+  { id: 5, name: 'Peanut Butter', description: 'Natural, unsweetened. Made from single-origin peanuts.', price: 240, stock: 20, emoji: '🥜', imgBg: '#FEF3DC', category: 'Nuts & Seeds' },
+  { id: 6, name: 'Turmeric Powder', description: 'Sun-dried and stone-ground organic turmeric. Deep aroma.', price: 160, stock: 35, emoji: '🌿', imgBg: '#FEF3DC', category: 'Spices' },
+];
+
+const INVENTORY_PRODUCTS = [
+  { id: 1, name: 'Groundnut Oil', category: 'Oils & Fats', price: 180, stock: 48, status: 'active', emoji: '🫙' },
+  { id: 2, name: 'Jaggery Powder', category: 'Sweeteners', price: 95, stock: 6, status: 'low', emoji: '🍯' },
+  { id: 3, name: 'Adesi Cow Ghee', category: 'Dairy', price: 620, stock: 2, status: 'low', emoji: '🥛' },
+  { id: 4, name: 'Wheat Flour', category: 'Grains & Pulses', price: 45, stock: 80, status: 'active', emoji: '🌾' },
+  { id: 5, name: 'Peanut Butter', category: 'Nuts & Seeds', price: 240, stock: 20, status: 'active', emoji: '🥜' },
+  { id: 6, name: 'Turmeric Powder', category: 'Spices', price: 160, stock: 35, status: 'active', emoji: '🌿' },
+];
+
+// ─── Screen: Login ───────────────────────────────────────
+const LoginScreen = ({ setScreen, setLoggedIn }) => {
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+  const [err, setErr] = useState('');
+
+  const submit = () => {
+    if (!user || !pass) { setErr('Please fill all fields.'); return; }
+    setLoggedIn(true);
+    setScreen('products');
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F3EE' }}>
+      <div style={{ background: '#fff', padding: '40px', borderRadius: 16, width: 380, boxShadow: '0 8px 40px rgba(0,0,0,0.1)', border: '1px solid #E2DDD6' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 700, letterSpacing: '0.02em' }}>
+            <span style={{ color: '#2E6B35' }}>Jiv</span><span style={{ color: '#E8920A' }}>Ras</span>
+          </div>
+          <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7A7A7A', marginTop: 3, fontFamily: 'Syne, sans-serif' }}>Natural</div>
+          <p style={{ fontSize: 13, color: '#7A7A7A', marginTop: 12, fontStyle: 'italic' }}>Essence of Life, Born from the Soil</p>
+        </div>
+        {err && <div style={{ background: '#FDECEA', color: '#C0392B', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16, border: '1px solid #f5c2bb' }}>{err}</div>}
+        {[['Username', user, setUser, 'text', 'Enter username…'], ['Password', pass, setPass, 'password', 'Enter password…']].map(([lbl, val, set, type, ph]) => (
+          <div key={lbl} style={{ marginBottom: 18 }}>
+            <label style={{ display: 'block', marginBottom: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#7A7A7A', fontFamily: 'Syne, sans-serif' }}>{lbl}</label>
+            <input type={type} value={val} placeholder={ph} onChange={e => set(e.target.value)}
+              style={{ width: '100%', padding: '10px 13px', border: '1px solid #E2DDD6', borderRadius: 9, fontSize: 14, background: '#F5F3EE', color: '#1A1A1A', outline: 'none', fontFamily: 'DM Sans, sans-serif' }} />
+          </div>
+        ))}
+        <button onClick={submit} style={{ width: '100%', padding: 13, background: '#D57937', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Syne, sans-serif', marginTop: 8 }}>Login</button>
+        <p style={{ textAlign: 'center', fontSize: 12, color: '#7A7A7A', marginTop: 16 }}>
+          New here? <span style={{ color: '#D57937', cursor: 'pointer', fontWeight: 600 }} onClick={() => setScreen('products')}>Browse as guest</span>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ─── Screen: Products ────────────────────────────────────
+const ProductsScreen = ({ setScreen, cart, setCart, loggedIn }) => {
+  const [added, setAdded] = useState(null);
+  const [search, setSearch] = useState('');
+
+  const filtered = PRODUCTS.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.description.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleAdd = (p) => {
+    setAdded(p.id);
+    setCart(prev => {
+      const ex = prev.find(i => i.id === p.id);
+      if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { ...p, qty: 1 }];
+    });
+    setTimeout(() => setAdded(null), 1400);
+  };
+
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+
+  return (
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      <div className="bg-blur"></div>
+      <div className="bg-overlay"></div>
+      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '32px 20px' }}>
+        <Header screen="products" setScreen={setScreen} cartCount={cartCount} isLoggedIn={loggedIn} />
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products by name or description…"
+            style={{ width: '100%', maxWidth: 560, padding: '12px 20px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.6)', fontSize: 14, outline: 'none', background: 'rgba(255,255,255,0.92)', color: '#1A1A1A', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+        </div>
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#fff', fontSize: 16, fontWeight: 700, textShadow: '1px 1px 4px rgba(0,0,0,0.4)', padding: 60 }}>No products found.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 24 }}>
+            {filtered.map(p => <ProductCard key={p.id} product={p} onAdd={handleAdd} added={added === p.id} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Screen: Cart ─────────────────────────────────────────
+const CartScreen = ({ setScreen, cart, setCart, loggedIn }) => {
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+      <div style={{ maxWidth: 840, margin: '0 auto', padding: '40px 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 700, color: '#1A1A1A' }}>Your Cart</h2>
+          <button onClick={() => setScreen('products')} style={{ background: 'transparent', color: '#6C5CE7', border: '2px solid #6C5CE7', padding: '9px 20px', borderRadius: 25, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>← Continue Shopping</button>
+        </div>
+        <CartPanel items={cart} setItems={setCart} onCheckout={() => setScreen('checkout')} />
+      </div>
+    </div>
+  );
+};
+
+// ─── Screen: Checkout ─────────────────────────────────────
+const CheckoutScreen = ({ setScreen, cart }) => {
+  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', pincode: '' });
+  const [placed, setPlaced] = useState(false);
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0) + 40;
+
+  const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  if (placed) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F3EE' }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', textAlign: 'center', maxWidth: 400, boxShadow: '0 16px 40px rgba(0,0,0,0.08)', border: '1px solid #E2DDD6' }}>
+        <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
+        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, marginBottom: 10 }}>Order Placed!</h2>
+        <p style={{ color: '#7A7A7A', lineHeight: 1.6, marginBottom: 28 }}>Your JivRas order is confirmed. Fresh groceries on their way to you.</p>
+        <button onClick={() => setScreen('products')} style={{ background: '#D57937', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 10, fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>Back to Shop</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', padding: '40px 20px' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+        <button onClick={() => setScreen('cart')} style={{ background: 'transparent', color: '#6C5CE7', border: '2px solid #6C5CE7', padding: '8px 18px', borderRadius: 25, cursor: 'pointer', fontWeight: 700, marginBottom: 20, fontSize: 13 }}>← Back to Cart</button>
+        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 700, marginBottom: 24, color: '#1A1A1A' }}>Checkout</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 24 }}>
+          {/* Order summary */}
+          <div style={{ background: '#fff', padding: 24, borderRadius: 16, boxShadow: '0 4px 15px rgba(0,0,0,0.08)', height: 'fit-content' }}>
+            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, marginBottom: 16, color: '#1A1A1A' }}>Order Summary</h3>
+            {cart.map(i => (
+              <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #f0f0f0', fontSize: 13, color: '#555' }}>
+                <span>{i.emoji} {i.name} × {i.qty} kg</span>
+                <span style={{ fontWeight: 600 }}>₹{i.price * i.qty}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 14, marginTop: 8, borderTop: '2px solid #eee', fontWeight: 700, fontSize: 16, color: '#6C5CE7', fontFamily: 'Syne, sans-serif' }}>
+              <span>Total</span><span>₹{total}</span>
+            </div>
+          </div>
+          {/* Delivery form */}
+          <div style={{ background: '#fff', padding: 24, borderRadius: 16, boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
+            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, marginBottom: 20, color: '#1A1A1A' }}>Delivery Details</h3>
+            {[['Full Name', 'name', 'text', 'Your name'], ['Phone', 'phone', 'tel', '10-digit mobile number'], ['Address', 'address', 'text', 'Street, Area'], ['City', 'city', 'text', 'City'], ['Pincode', 'pincode', 'text', '6-digit pincode']].map(([lbl, key, type, ph]) => (
+              <div key={key} style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 5, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#7A7A7A', fontFamily: 'Syne, sans-serif' }}>{lbl}</label>
+                <input type={type} value={form[key]} placeholder={ph} onChange={e => update(key, e.target.value)}
+                  style={{ width: '100%', padding: '11px 13px', border: '1px solid #E2DDD6', borderRadius: 9, fontSize: 13, background: '#F5F3EE', color: '#1A1A1A', outline: 'none', fontFamily: 'DM Sans, sans-serif' }} />
+              </div>
+            ))}
+            <button onClick={() => setPlaced(true)} style={{ width: '100%', padding: 14, background: 'linear-gradient(135deg, #6c5ce7, #a55eea)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Syne, sans-serif', marginTop: 8 }}>
+              Place Order — ₹{total}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Screen: Inventory Dashboard ──────────────────────────
+const InventoryScreen = ({ setScreen }) => {
+  const [activeNav, setActiveNav] = useState('Inventory');
+  const [activeCat, setActiveCat] = useState('All');
+  const [viewMode, setViewMode] = useState('grid');
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState(null);
+
+  const filtered = INVENTORY_PRODUCTS.filter(p =>
+    (activeCat === 'All' || p.category === activeCat) &&
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const StatusBadge = ({ status }) => {
+    const map = { active: ['#D6F0DD', '#1E7A35', 'Active'], low: ['#FDECEA', '#C0392B', 'Low Stock'], inactive: ['#FEF3DC', '#D4820A', 'Inactive'] };
+    const [bg, color, label] = map[status] || map.active;
+    return <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, letterSpacing: '0.04em', textTransform: 'uppercase', background: bg, color, fontFamily: 'Syne, sans-serif' }}>{label}</span>;
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#F5F3EE', fontFamily: 'DM Sans, sans-serif' }}>
+      <Sidebar activeNav={activeNav} setActiveNav={setActiveNav} activeCat={activeCat} setActiveCat={v => setActiveCat(prev => prev === v ? 'All' : v)} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Topbar */}
+        <div style={{ background: '#fff', borderBottom: '1px solid #E2DDD6', padding: '13px 24px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 17, fontWeight: 700 }}>Products</span>
+          <div style={{ position: 'relative', flex: 1, maxWidth: 300, marginLeft: 'auto' }}>
+            <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products…"
+              style={{ width: '100%', padding: '7px 12px 7px 30px', border: '1px solid #E2DDD6', borderRadius: 8, fontSize: 12, background: '#F5F3EE', fontFamily: 'DM Sans, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', border: '1px solid #E2DDD6', borderRadius: 8, overflow: 'hidden' }}>
+            {['grid', 'list'].map(m => (
+              <button key={m} onClick={() => setViewMode(m)}
+                style={{ padding: '6px 11px', cursor: 'pointer', background: viewMode === m ? '#D57937' : 'transparent', border: 'none', color: viewMode === m ? '#fff' : '#7A7A7A', fontSize: 14 }}>
+                {m === 'grid' ? '⊞' : '☰'}
+              </button>
+            ))}
+          </div>
+          <button style={{ background: '#D57937', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontFamily: 'Syne, sans-serif', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+            + Add Product
+          </button>
+          <button onClick={() => setScreen('products')} style={{ background: 'transparent', border: '1px solid #E2DDD6', padding: '7px 14px', borderRadius: 8, fontSize: 12, cursor: 'pointer', color: '#7A7A7A' }}>← Storefront</button>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#D57937' }}></div>
+            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 700 }}>{activeCat === 'All' ? 'All Products' : activeCat}</span>
+            <span style={{ fontSize: 11, padding: '2px 9px', borderRadius: 10, background: '#E8F0EA', color: '#D57937', fontWeight: 500 }}>{filtered.length} items</span>
+            <div style={{ flex: 1, height: 1, background: '#E2DDD6' }}></div>
+          </div>
+
+          {viewMode === 'grid' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 13 }}>
+              {filtered.map(p => (
+                <div key={p.id} style={{ background: '#fff', border: '1px solid #E2DDD6', borderRadius: 14, overflow: 'hidden', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.07)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
+                  <div style={{ height: 90, background: p.status === 'low' ? '#FDECEA' : '#F5F3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, position: 'relative' }}>
+                    {p.emoji}
+                    <span style={{ position: 'absolute', top: 8, right: 8 }}><StatusBadge status={p.status} /></span>
+                  </div>
+                  <div style={{ padding: 13 }}>
+                    <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 13, fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                    <div style={{ fontSize: 11, color: '#7A7A7A', marginBottom: 10 }}>{p.category}</div>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                      <div style={{ flex: 1, background: '#F5F3EE', borderRadius: 6, padding: '5px 6px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, fontFamily: 'Syne, sans-serif' }}>₹{p.price}</div>
+                        <div style={{ fontSize: 9, color: '#7A7A7A', marginTop: 1 }}>Price/kg</div>
+                      </div>
+                      <div style={{ flex: 1, background: '#F5F3EE', borderRadius: 6, padding: '5px 6px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, fontFamily: 'Syne, sans-serif', color: p.status === 'low' ? '#C0392B' : '#1A1A1A' }}>{p.stock}</div>
+                        <div style={{ fontSize: 9, color: '#7A7A7A', marginTop: 1 }}>Stock kg</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button style={{ flex: 1, padding: '6px 0', border: '1px solid #D57937', background: 'transparent', color: '#D57937', borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Save</button>
+                      <button onClick={() => setModal(p)} style={{ flex: 1, padding: '6px 0', border: '1px solid #e0d0d0', background: 'transparent', color: '#C0392B', borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ background: '#fff', border: '1px solid #E2DDD6', borderRadius: 14, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    {['Product', 'Category', 'Price/kg', 'Stock (kg)', 'Status', 'Actions'].map(h => (
+                      <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#7A7A7A', background: '#F5F3EE', borderBottom: '1px solid #E2DDD6', fontFamily: 'Syne, sans-serif' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((p, i) => (
+                    <tr key={p.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #E2DDD6' : 'none' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F5F3EE'}
+                      onMouseLeave={e => e.currentTarget.style.background = ''}>
+                      <td style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 22 }}>{p.emoji}</span>
+                        <span style={{ fontWeight: 500, fontSize: 13 }}>{p.name}</span>
+                      </td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#7A7A7A' }}>{p.category}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, fontFamily: 'Syne, sans-serif', fontWeight: 600 }}>₹{p.price}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, color: p.status === 'low' ? '#C0392B' : '#1A1A1A', fontWeight: p.status === 'low' ? 600 : 400 }}>{p.stock}</td>
+                      <td style={{ padding: '10px 16px' }}><StatusBadge status={p.status} /></td>
+                      <td style={{ padding: '10px 16px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button style={{ padding: '5px 12px', border: '1px solid #D57937', color: '#D57937', background: 'transparent', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Save</button>
+                          <button onClick={() => setModal(p)} style={{ padding: '5px 12px', border: '1px solid #e0d0d0', color: '#C0392B', background: 'transparent', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Delete modal */}
+      {modal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', padding: '36px', borderRadius: 16, width: 360, textAlign: 'center', boxShadow: '0 24px 48px rgba(0,0,0,0.2)' }}>
+            <div style={{ fontSize: 44, marginBottom: 14 }}>🗑️</div>
+            <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Delete Product?</div>
+            <p style={{ color: '#7A7A7A', fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>This will permanently remove <strong>{modal.name}</strong> from inventory. This cannot be undone.</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <button onClick={() => setModal(null)} style={{ padding: '9px 22px', background: '#f1f3f5', color: '#495057', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Cancel</button>
+              <button onClick={() => setModal(null)} style={{ padding: '9px 22px', background: '#FDECEA', color: '#C0392B', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Screen: My Orders ────────────────────────────────────
+const MyOrdersScreen = ({ setScreen }) => {
+  const orders = [
+    { id: 'JR-2024-001', date: 'Apr 22, 2026', items: 'Groundnut Oil × 2 kg, Jaggery Powder × 1 kg', total: 455, status: 'Delivered' },
+    { id: 'JR-2024-002', date: 'Apr 18, 2026', items: 'Adesi Cow Ghee × 1 kg, Wheat Flour × 5 kg', total: 845, status: 'In Transit' },
+    { id: 'JR-2024-003', date: 'Apr 10, 2026', items: 'Peanut Butter × 2 kg, Turmeric × 1 kg', total: 640, status: 'Delivered' },
+  ];
+  const statusColor = { Delivered: ['#D6F0DD', '#1E7A35'], 'In Transit': ['#FEF3DC', '#D4820A'] };
+  return (
+    <div style={{ minHeight: '100vh', background: '#F5F3EE' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+          <button onClick={() => setScreen('products')} style={{ background: 'transparent', border: '1px solid #E2DDD6', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: '#7A7A7A' }}>← Back</button>
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700 }}>My Orders</h2>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {orders.map(o => {
+            const [bg, color] = statusColor[o.status] || ['#F5F3EE', '#7A7A7A'];
+            return (
+              <div key={o.id} style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2DDD6', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14 }}>{o.id}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: bg, color, textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: 'Syne, sans-serif' }}>{o.status}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#7A7A7A', marginBottom: 4 }}>{o.date}</div>
+                  <div style={{ fontSize: 12, color: '#1A1A1A' }}>{o.items}</div>
+                </div>
+                <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 18, color: '#D57937' }}>₹{o.total}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── App Root ─────────────────────────────────────────────
+const App = () => {
+  const [screen, setScreen] = useState('products');
+  const [cart, setCart] = useState([]);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  // Navigation bar
+  const NAV = [
+    { id: 'products', label: '🛒 Shop' },
+    { id: 'cart', label: `🧺 Cart${cart.length > 0 ? ` (${cart.reduce((s,i)=>s+i.qty,0)})` : ''}` },
+    { id: 'checkout', label: '📋 Checkout' },
+    { id: 'my-orders', label: '📦 My Orders' },
+    { id: 'inventory', label: '📊 Dashboard' },
+    { id: 'login', label: loggedIn ? '✓ Logged In' : '🔑 Login' },
+  ];
+
+  return (
+    <div>
+      {/* Top navigation bar for prototype */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#1A1A1A', display: 'flex', alignItems: 'center', gap: 2, padding: '0 16px', height: 40, overflowX: 'auto' }}>
+        <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginRight: 10, whiteSpace: 'nowrap', letterSpacing: '0.08em', textTransform: 'uppercase' }}>JivRas UI Kit</span>
+        {NAV.map(n => (
+          <button key={n.id} onClick={() => setScreen(n.id)}
+            style={{ background: screen === n.id ? '#D57937' : 'transparent', color: screen === n.id ? '#fff' : 'rgba(255,255,255,0.55)', border: 'none', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontFamily: 'DM Sans, sans-serif', fontWeight: screen === n.id ? 600 : 400, whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+            {n.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ paddingTop: 40 }}>
+        {screen === 'login' && <LoginScreen setScreen={setScreen} setLoggedIn={setLoggedIn} />}
+        {screen === 'products' && <ProductsScreen setScreen={setScreen} cart={cart} setCart={setCart} loggedIn={loggedIn} />}
+        {screen === 'cart' && <CartScreen setScreen={setScreen} cart={cart} setCart={setCart} loggedIn={loggedIn} />}
+        {screen === 'checkout' && <CheckoutScreen setScreen={setScreen} cart={cart} />}
+        {screen === 'inventory' && <InventoryScreen setScreen={setScreen} />}
+        {screen === 'my-orders' && <MyOrdersScreen setScreen={setScreen} />}
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+<div id="root"></div>
+</body>
+</html>

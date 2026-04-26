@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 355" width="300" height="355">
+  <defs>
+    <radialGradient id="bg4" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#fdfaf3"></stop>
+      <stop offset="100%" stop-color="#ede5d0"></stop>
+    </radialGradient>
+    <radialGradient id="glow4" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF5CC" stop-opacity="1"></stop>
+      <stop offset="100%" stop-color="#FFF5CC" stop-opacity="0"></stop>
+    </radialGradient>
+  </defs>
+
+  <rect width="300" height="355" fill="url(#bg4)" rx="14"></rect>
+
+  
+  <ellipse cx="150" cy="94" rx="75" ry="60" fill="url(#glow4)"></ellipse>
+
+  
+  <g transform="translate(150,97)" stroke="#D4820A" stroke-linecap="round">
+    <line x1="0" y1="-72" x2="0" y2="-54" stroke-width="3.6"></line>
+    <line x1="51" y1="-51" x2="38" y2="-38" stroke-width="3.2"></line>
+    <line x1="72" y1="0" x2="55" y2="0" stroke-width="3.2"></line>
+    <line x1="-51" y1="-51" x2="-38" y2="-38" stroke-width="3.2"></line>
+    <line x1="-72" y1="0" x2="-55" y2="0" stroke-width="3.2"></line>
+    <line x1="36" y1="-62" x2="28" y2="-47" stroke-width="2.4" opacity="0.8"></line>
+    <line x1="-36" y1="-62" x2="-28" y2="-47" stroke-width="2.4" opacity="0.8"></line>
+    <line x1="62" y1="-36" x2="47" y2="-28" stroke-width="2.4" opacity="0.8"></line>
+    <line x1="-62" y1="-36" x2="-47" y2="-28" stroke-width="2.4" opacity="0.8"></line>
+    <line x1="18" y1="-71" x2="14" y2="-56" stroke-width="1.8" opacity="0.55"></line>
+    <line x1="-18" y1="-71" x2="-14" y2="-56" stroke-width="1.8" opacity="0.55"></line>
+    <line x1="68" y1="-18" x2="54" y2="-14" stroke-width="1.8" opacity="0.55"></line>
+    <line x1="-68" y1="-18" x2="-54" y2="-14" stroke-width="1.8" opacity="0.55"></line>
+  </g>
+
+  
+  
+  <line x1="150" y1="158" x2="150" y2="110" stroke="#2E6B35" stroke-width="5" stroke-linecap="round"></line>
+
+  
+  <ellipse cx="127" cy="126" rx="26" ry="11" fill="#2E6B35" transform="rotate(-42 127 126)"></ellipse>
+  
+  <line x1="148" y1="142" x2="108" y2="112" stroke="#4fa85c" stroke-width="1.3" opacity="0.55" stroke-linecap="round"></line>
+
+  
+  <ellipse cx="173" cy="126" rx="26" ry="11" fill="#2E6B35" transform="rotate(42 173 126)"></ellipse>
+  
+  <line x1="152" y1="142" x2="192" y2="112" stroke="#4fa85c" stroke-width="1.3" opacity="0.55" stroke-linecap="round"></line>
+
+  
+  <ellipse cx="150" cy="95" rx="11" ry="24" fill="#358045"></ellipse>
+  
+  <line x1="150" y1="116" x2="150" y2="74" stroke="#4fa85c" stroke-width="1.3" opacity="0.6" stroke-linecap="round"></line>
+
+  
+  <ellipse cx="138" cy="144" rx="12" ry="5.5" fill="#4a9458" transform="rotate(-35 138 144)" opacity="0.85"></ellipse>
+  
+  <ellipse cx="162" cy="144" rx="12" ry="5.5" fill="#4a9458" transform="rotate(35 162 144)" opacity="0.85"></ellipse>
+
+  
+  <text y="194" font-family="Georgia,&#39;Times New Roman&#39;,serif" font-size="52" font-weight="700" text-anchor="middle">
+    <tspan x="120" fill="#2E6B35">Jiv</tspan><tspan fill="#E8920A">Ras</tspan>
+  </text>
+
+  
+  <text x="150" y="214" text-anchor="middle" font-family="Georgia,&#39;Times New Roman&#39;,serif" font-size="14.5" font-weight="600" fill="#2E6B35" letter-spacing="7">NATURAL</text>
+  <line x1="46" y1="208" x2="72" y2="208" stroke="#2E6B35" stroke-width="1" opacity="0.4"></line>
+  <line x1="228" y1="208" x2="254" y2="208" stroke="#2E6B35" stroke-width="1" opacity="0.4"></line>
+
+  
+  <g transform="translate(150,242)" fill="none" stroke="#4a6635" stroke-linecap="round" opacity="0.85">
+    <path d="M0,0 L0,22" stroke-width="2.5"></path>
+    <path d="M0,8 Q-14,16 -26,12" stroke-width="2.2"></path>
+    <path d="M-26,12 Q-20,20 -14,30" stroke-width="1.8"></path>
+    <path d="M0,8 Q14,16 26,12" stroke-width="2.2"></path>
+    <path d="M26,12 Q20,20 14,30" stroke-width="1.8"></path>
+    <path d="M-10,13 Q-26,22 -36,30" stroke-width="1.7"></path>
+    <path d="M10,13 Q26,22 36,30" stroke-width="1.7"></path>
+    <path d="M-18,10 Q-40,14 -50,22" stroke-width="1.2" opacity="0.5"></path>
+    <path d="M18,10 Q40,14 50,22" stroke-width="1.2" opacity="0.5"></path>
+    <circle cx="-26" cy="12" r="3" fill="#4a6635"></circle>
+    <circle cx="26" cy="12" r="3" fill="#4a6635"></circle>
+    <circle cx="-36" cy="30" r="2" fill="#4a6635"></circle>
+    <circle cx="36" cy="30" r="2" fill="#4a6635"></circle>
+    <circle cx="0" cy="22" r="2.2" fill="#4a6635"></circle>
+  </g>
+
+  
+  <line x1="22" y1="316" x2="278" y2="316" stroke="#8a7050" stroke-width="0.6" opacity="0.3"></line>
+  <text x="150" y="330" text-anchor="middle" font-family="Georgia,serif" font-size="9" fill="#7a6040" letter-spacing="1.5" font-style="italic" opacity="0.9">ESSENCE OF LIFE, BORN FROM THE SOIL</text>
+</svg>

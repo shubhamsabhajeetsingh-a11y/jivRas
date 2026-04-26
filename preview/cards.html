@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 20px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; gap: 14px; flex-wrap: wrap; }
+  .product-card { background: white; border: 1px solid #E2DDD6; border-radius: 14px; overflow: hidden; width: 200px; transition: transform 0.2s, box-shadow 0.2s; }
+  .product-card.hovered { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+  .card-img { width: 100%; height: 90px; background: #F5F3EE; display: flex; align-items: center; justify-content: center; position: relative; }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .card-status { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.04em; text-transform: uppercase; font-family: 'Syne', sans-serif; }
+  .card-body { padding: 12px; }
+  .card-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; color: #1A1A1A; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-cat { font-size: 11px; color: #7A7A7A; margin-bottom: 8px; }
+  .card-meta { display: flex; gap: 6px; margin-bottom: 10px; }
+  .meta-chip { flex: 1; background: #F5F3EE; border-radius: 6px; padding: 5px 6px; text-align: center; }
+  .meta-val { font-size: 13px; font-weight: 500; font-family: 'Syne', sans-serif; color: #1A1A1A; }
+  .meta-lbl { font-size: 9px; color: #7A7A7A; margin-top: 1px; }
+  .card-actions { display: flex; gap: 6px; }
+  .btn-save { flex: 1; padding: 6px 0; border: 1px solid #D57937; background: transparent; color: #D57937; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .btn-del { flex: 1; padding: 6px 0; border: 1px solid #e0d0d0; background: transparent; color: #C0392B; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+</style>
+</head>
+<body>
+  <!-- Default card -->
+  <div class="product-card">
+    <div class="card-img" style="background:#FEF3DC;">
+      <span style="font-size:32px;">🫙</span>
+      <span class="card-status" style="background:#D6F0DD;color:#1E7A35;">Active</span>
+    </div>
+    <div class="card-body">
+      <div class="card-name">Groundnut Oil</div>
+      <div class="card-cat">Oils &amp; Fats</div>
+      <div class="card-meta">
+        <div class="meta-chip"><div class="meta-val">₹180</div><div class="meta-lbl">Price/kg</div></div>
+        <div class="meta-chip"><div class="meta-val">48</div><div class="meta-lbl">Stock kg</div></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-save">Save</button>
+        <button class="btn-del">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hover state -->
+  <div class="product-card hovered">
+    <div class="card-img" style="background:#E8F0EA;">
+      <span style="font-size:32px;">🌾</span>
+      <span class="card-status" style="background:#FEF3DC;color:#D4820A;">Inactive</span>
+    </div>
+    <div class="card-body">
+      <div class="card-name">Jaggery Powder</div>
+      <div class="card-cat">Sweeteners</div>
+      <div class="card-meta">
+        <div class="meta-chip"><div class="meta-val">₹95</div><div class="meta-lbl">Price/kg</div></div>
+        <div class="meta-chip"><div class="meta-val" style="color:#C0392B;">4</div><div class="meta-lbl">Stock kg</div></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-save">Save</button>
+        <button class="btn-del">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low stock -->
+  <div class="product-card">
+    <div class="card-img" style="background:#FDECEA;">
+      <span style="font-size:32px;">🥛</span>
+      <span class="card-status" style="background:#FDECEA;color:#C0392B;">Low Stock</span>
+    </div>
+    <div class="card-body">
+      <div class="card-name">Adesi Cow Ghee</div>
+      <div class="card-cat">Dairy</div>
+      <div class="card-meta">
+        <div class="meta-chip"><div class="meta-val">₹620</div><div class="meta-lbl">Price/kg</div></div>
+        <div class="meta-chip"><div class="meta-val" style="color:#C0392B;">2</div><div class="meta-lbl">Stock kg</div></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-save">Save</button>
+        <button class="btn-del">Delete</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

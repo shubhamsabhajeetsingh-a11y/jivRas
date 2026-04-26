@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 20px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; padding: 9px 20px; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: #D57937; color: white; }
+  .btn-outline { background: transparent; border: 1px solid #D57937; color: #D57937; }
+  .btn-ghost { background: transparent; border: 1px solid #E2DDD6; color: #7A7A7A; }
+  .btn-danger { background: transparent; border: 1px solid #e0d0d0; color: #C0392B; }
+  .btn-amber { background: #D4820A; color: white; }
+  .btn-pill { background: #D57937; color: white; border-radius: 9999px; }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn-disabled { background: #E2DDD6; color: #7A7A7A; cursor: not-allowed; }
+  .group-label { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #7A7A7A; width: 100%; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div class="group-label" style="width:100%;">Primary Actions</div>
+  <button class="btn btn-primary">Add Product</button>
+  <button class="btn btn-primary btn-sm">+ Add</button>
+  <button class="btn btn-amber">Save Changes</button>
+  <button class="btn btn-pill">Add to Cart</button>
+  
+  <div class="group-label" style="width:100%;">Secondary / Outline</div>
+  <button class="btn btn-outline">Update Stock</button>
+  <button class="btn btn-ghost">Cancel</button>
+  <button class="btn btn-danger">Delete</button>
+
+  <div class="group-label" style="width:100%;">States</div>
+  <button class="btn btn-primary" style="opacity:0.88; transform:translateY(-1px);">Hover State</button>
+  <button class="btn btn-disabled" disabled>Disabled</button>
+  <button class="btn btn-primary" style="opacity:0.5;cursor:not-allowed;">Loading…</button>
+</body>
+</html>

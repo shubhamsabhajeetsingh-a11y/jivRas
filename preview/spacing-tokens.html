@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 20px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .group-title { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #7A7A7A; }
+  .space-row { display: flex; align-items: center; gap: 10px; }
+  .space-block { background: #D57937; border-radius: 3px; height: 16px; opacity: 0.7; }
+  .space-label { font-family: 'DM Sans', sans-serif; font-size: 11px; color: #7A7A7A; white-space: nowrap; }
+  .radius-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .radius-box { background: white; border: 1px solid #E2DDD6; display: flex; align-items: center; justify-content: center; width: 52px; height: 40px; }
+  .radius-label { font-family: 'Syne', sans-serif; font-size: 9px; font-weight: 700; color: #7A7A7A; margin-top: 4px; text-align: center; }
+  .radius-card { display: flex; flex-direction: column; align-items: center; }
+</style>
+</head>
+<body>
+  <div class="group">
+    <div class="group-title">Spacing Scale (8px base)</div>
+    <div class="space-row"><div class="space-block" style="width:4px;"></div><span class="space-label">4px · --space-1</span></div>
+    <div class="space-row"><div class="space-block" style="width:8px;"></div><span class="space-label">8px · --space-2</span></div>
+    <div class="space-row"><div class="space-block" style="width:12px;"></div><span class="space-label">12px · --space-3</span></div>
+    <div class="space-row"><div class="space-block" style="width:16px;"></div><span class="space-label">16px · --space-4</span></div>
+    <div class="space-row"><div class="space-block" style="width:20px;"></div><span class="space-label">20px · --space-5</span></div>
+    <div class="space-row"><div class="space-block" style="width:24px;"></div><span class="space-label">24px · --space-6 · content padding</span></div>
+    <div class="space-row"><div class="space-block" style="width:28px;"></div><span class="space-label">28px · --space-7 · section padding</span></div>
+    <div class="space-row"><div class="space-block" style="width:32px;"></div><span class="space-label">32px · --space-8</span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">Border Radius</div>
+    <div class="radius-row">
+      <div class="radius-card"><div class="radius-box" style="border-radius:6px;"><span style="font-size:9px;color:#7A7A7A;">6</span></div><div class="radius-label">--radius-sm</div></div>
+      <div class="radius-card"><div class="radius-box" style="border-radius:8px;"><span style="font-size:9px;color:#7A7A7A;">8</span></div><div class="radius-label">--radius-md</div></div>
+      <div class="radius-card"><div class="radius-box" style="border-radius:10px;"><span style="font-size:9px;color:#7A7A7A;">10</span></div><div class="radius-label">--radius-lg</div></div>
+      <div class="radius-card"><div class="radius-box" style="border-radius:14px;"><span style="font-size:9px;color:#7A7A7A;">14</span></div><div class="radius-label">--radius-xl · cards</div></div>
+      <div class="radius-card"><div class="radius-box" style="border-radius:16px;"><span style="font-size:9px;color:#7A7A7A;">16</span></div><div class="radius-label">--radius-2xl · modals</div></div>
+      <div class="radius-card"><div class="radius-box" style="border-radius:9999px; width:60px;"><span style="font-size:9px;color:#7A7A7A;">pill</span></div><div class="radius-label">--radius-pill</div></div>
+    </div>
+  </div>
+</body>
+</html>

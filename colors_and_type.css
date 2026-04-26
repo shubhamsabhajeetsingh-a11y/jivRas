@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════
+   JivRas Design System — Color & Typography Tokens
+   Fonts: Syne (display/headings) + DM Sans (body/UI)
+   Google Fonts import at end of file.
+   ═══════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap');
+
+:root {
+  /* ── Brand Core ── */
+  --color-brand-green:       #2E6B35;   /* "Jiv" wordmark — forest green */
+  --color-brand-orange:      #E8920A;   /* "Ras" wordmark — golden orange */
+
+  /* ── Base Palette ── */
+  --color-bg:                #F5F3EE;   /* Page background — warm off-white */
+  --color-surface:           #FFFFFF;   /* Cards, panels, modals */
+  --color-accent:            #D57937;   /* Primary CTA — burnt orange */
+  --color-accent-hover:      #BF6929;   /* Accent darker (hover) */
+  --color-accent-light:      #E8F0EA;   /* Accent tint (success/green-tint) */
+
+  --color-amber:             #D4820A;   /* Secondary warm amber */
+  --color-amber-light:       #FEF3DC;   /* Amber tint background */
+
+  --color-red:               #C0392B;   /* Danger / low-stock / delete */
+  --color-red-light:         #FDECEA;   /* Red tint background */
+
+  --color-green:             #1E7A35;   /* Success / in-stock */
+  --color-green-light:       #D6F0DD;   /* Green tint background */
+  --color-green-indicator:   #8FC49E;   /* Sidebar active indicator */
+
+  /* ── Text ── */
+  --color-text:              #1A1A1A;   /* Primary body text */
+  --color-text-muted:        #7A7A7A;   /* Secondary / placeholder */
+  --color-text-on-accent:    #FFFFFF;   /* Text on accent backgrounds */
+
+  /* ── Borders & Dividers ── */
+  --color-border:            #E2DDD6;   /* Default border — warm grey */
+  --color-border-focus:      #D4820A;   /* Input focus border */
+
+  /* ── Legacy Storefront (transitional) ── */
+  --color-purple:            #6C5CE7;   /* Cart/checkout CTAs (legacy) */
+  --color-purple-dark:       #5B4CDB;   /* Purple hover */
+
+  /* ══════════════════════════════════════════
+     SEMANTIC ALIASES
+     ══════════════════════════════════════════ */
+
+  /* Backgrounds */
+  --bg:                      var(--color-bg);
+  --surface:                 var(--color-surface);
+
+  /* Interactive */
+  --accent:                  var(--color-accent);
+  --amber:                   var(--color-amber);
+  --amber-light:             var(--color-amber-light);
+  --red:                     var(--color-red);
+  --red-light:               var(--color-red-light);
+
+  /* Text */
+  --text:                    var(--color-text);
+  --text-muted:              var(--color-text-muted);
+
+  /* Structure */
+  --border:                  var(--color-border);
+
+  /* ══════════════════════════════════════════
+     TYPOGRAPHY
+     ══════════════════════════════════════════ */
+
+  /* Font families */
+  --font-display:            'Syne', sans-serif;
+  --font-body:               'DM Sans', sans-serif;
+
+  /* Scale — base 14px / ratio ~1.25 */
+  --text-xs:                 10px;
+  --text-sm:                 11px;
+  --text-base:               13px;
+  --text-md:                 14px;
+  --text-lg:                 15px;
+  --text-xl:                 18px;
+  --text-2xl:                19px;
+  --text-3xl:                22px;
+  --text-4xl:                28px;
+
+  /* Font weights */
+  --weight-light:            300;
+  --weight-regular:          400;
+  --weight-medium:           500;
+  --weight-semibold:         600;
+  --weight-bold:             700;
+
+  /* Letter spacing */
+  --tracking-caps:           0.07em;    /* ALL CAPS labels */
+  --tracking-caps-wide:      0.12em;    /* Sidebar cat labels */
+  --tracking-brand:          0.04em;    /* Brand name */
+
+  /* Line heights */
+  --leading-tight:           1.2;
+  --leading-normal:          1.5;
+  --leading-relaxed:         1.6;
+
+  /* ══════════════════════════════════════════
+     SPACING (8px base grid)
+     ══════════════════════════════════════════ */
+  --space-1:                 4px;
+  --space-2:                 8px;
+  --space-3:                 12px;
+  --space-4:                 16px;
+  --space-5:                 20px;
+  --space-6:                 24px;
+  --space-7:                 28px;
+  --space-8:                 32px;
+
+  /* ══════════════════════════════════════════
+     BORDER RADII
+     ══════════════════════════════════════════ */
+  --radius-sm:               6px;
+  --radius-md:               8px;
+  --radius-lg:               10px;
+  --radius-xl:               14px;
+  --radius-2xl:              16px;
+  --radius-3xl:              20px;
+  --radius-pill:             9999px;
+
+  /* ══════════════════════════════════════════
+     SHADOWS / ELEVATION
+     ══════════════════════════════════════════ */
+  --shadow-xs:               0 1px 3px rgba(0,0,0,0.05);
+  --shadow-sm:               0 4px 15px rgba(0,0,0,0.07);
+  --shadow-md:               0 8px 24px rgba(0,0,0,0.07);
+  --shadow-lg:               0 16px 40px rgba(0,0,0,0.05);
+  --shadow-xl:               0 24px 48px rgba(0,0,0,0.2);
+  --shadow-focus-amber:      0 0 0 3px rgba(212,130,10,0.12);
+  --shadow-focus-accent:     0 0 0 3px rgba(213,121,55,0.15);
+
+  /* ══════════════════════════════════════════
+     TRANSITIONS
+     ══════════════════════════════════════════ */
+  --transition-fast:         0.15s ease;
+  --transition-base:         0.2s ease;
+  --transition-slow:         0.3s ease;
+  --transition-modal:        0.25s ease-out;
+}
+
+/* ═══════════════════════════════════════════════════
+   SEMANTIC ELEMENT STYLES
+   Apply to a :root or scoped to a design container
+   ═══════════════════════════════════════════════════ */
+
+/* Headings — Syne */
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+  line-height: var(--leading-tight);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+  line-height: var(--leading-tight);
+}
+
+h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+  line-height: var(--leading-tight);
+}
+
+h4 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+}
+
+h5 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+}
+
+h6 {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--text-muted);
+}
+
+/* Body — DM Sans */
+p, body {
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  color: var(--text);
+  line-height: var(--leading-normal);
+}
+
+small {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Code — monospace fallback */
+code, pre {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: var(--text-base);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  color: var(--color-accent);
+}
+
+/* Label utility (for form labels, caps headings) */
+.label-caps {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--text-muted);
+}
+
+/* Brand name rendering */
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-brand);
+}
+
+.brand-name .jiv { color: var(--color-brand-green); }
+.brand-name .ras { color: var(--color-brand-orange); }

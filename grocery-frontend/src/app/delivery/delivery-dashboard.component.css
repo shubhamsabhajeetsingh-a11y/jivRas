@@ -1,0 +1,40 @@
+.delivery-dashboard { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+
+.page-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.page-header h1 { margin: 0; font-size: 1.6rem; flex: 1; }
+.page-header .subtitle { width: 100%; margin: 0; color: #666; font-size: 0.9rem; }
+.refresh-btn { padding: 0.4rem 0.9rem; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; background: #f5f5f5; }
+.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.state-msg { text-align: center; padding: 3rem 1rem; color: #555; font-size: 1rem; }
+.error-msg { color: #c62828; }
+.empty-msg { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+.empty-icon { font-size: 3rem; }
+.retry-btn { margin-top: 0.75rem; padding: 0.4rem 1rem; border: 1px solid #c62828; color: #c62828; border-radius: 6px; cursor: pointer; background: none; }
+
+.order-list { display: flex; flex-direction: column; gap: 1rem; }
+
+.order-card { border: 1px solid #e0e0e0; border-radius: 10px; padding: 1.25rem; border-left: 4px solid #1976d2; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.order-id { font-weight: 700; font-size: 1.05rem; }
+.status-badge { background: #1976d2; color: #fff; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+
+.customer-info { margin-bottom: 0.4rem; }
+.customer-name { font-weight: 600; font-size: 1rem; }
+.customer-phone { color: #555; font-size: 0.9rem; }
+
+.address-info { color: #444; font-size: 0.88rem; margin-bottom: 0.5rem; }
+
+.items-summary { font-size: 0.9rem; color: #333; margin-bottom: 0.5rem; }
+.more-items { color: #888; margin-left: 0.4rem; }
+
+.order-meta { display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; }
+.total { font-weight: 700; font-size: 1.05rem; color: #2e7d32; }
+.eta { font-size: 0.88rem; color: #555; }
+.eta-unknown { color: #aaa; }
+
+.card-footer { display: flex; justify-content: flex-end; }
+.btn-delivered { padding: 0.55rem 1.4rem; background: #2e7d32; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-delivered:hover:not(:disabled) { background: #1b5e20; }
+.btn-delivered:disabled { opacity: 0.6; cursor: not-allowed; }

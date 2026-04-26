@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 20px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; gap: 16px; align-items: flex-start; }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .pair { display: flex; gap: 8px; align-items: center; }
+  .swatch-sm { width: 44px; height: 44px; border-radius: 8px; }
+  .swatch-lt { width: 44px; height: 44px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); }
+  .meta { display: flex; flex-direction: column; }
+  .meta-name { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: #1A1A1A; }
+  .meta-hex { font-size: 10px; color: #7A7A7A; }
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .divider { width: 1px; background: #E2DDD6; align-self: stretch; margin: 0 4px; }
+</style>
+</head>
+<body>
+  <div class="group">
+    <div class="pair">
+      <div class="swatch-sm" style="background:#1E7A35;"></div>
+      <div class="swatch-lt" style="background:#D6F0DD;"></div>
+      <div class="meta"><span class="meta-name">Success / In-Stock</span><span class="meta-hex">#1E7A35 · #D6F0DD</span></div>
+    </div>
+    <div><span class="badge" style="background:#D6F0DD;color:#1E7A35;">Active</span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="group">
+    <div class="pair">
+      <div class="swatch-sm" style="background:#D4820A;"></div>
+      <div class="swatch-lt" style="background:#FEF3DC;"></div>
+      <div class="meta"><span class="meta-name">Warning / Inactive</span><span class="meta-hex">#D4820A · #FEF3DC</span></div>
+    </div>
+    <div><span class="badge" style="background:#FEF3DC;color:#D4820A;">Inactive</span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="group">
+    <div class="pair">
+      <div class="swatch-sm" style="background:#C0392B;"></div>
+      <div class="swatch-lt" style="background:#FDECEA;"></div>
+      <div class="meta"><span class="meta-name">Danger / Low Stock</span><span class="meta-hex">#C0392B · #FDECEA</span></div>
+    </div>
+    <div><span class="badge" style="background:#FDECEA;color:#C0392B;">Low Stock</span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="group">
+    <div class="pair">
+      <div class="swatch-sm" style="background:#8FC49E;"></div>
+      <div class="meta"><span class="meta-name">Indicator</span><span class="meta-hex">#8FC49E · Sidebar active</span></div>
+    </div>
+  </div>
+</body>
+</html>

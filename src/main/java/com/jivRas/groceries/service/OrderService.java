@@ -1,6 +1,7 @@
 package com.jivRas.groceries.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,7 @@ import com.jivRas.groceries.repository.ProductRepository;
 import com.jivRas.groceries.repository.PaymentRepository;
 import com.jivRas.groceries.enums.PaymentStatus;
 import com.jivRas.groceries.dto.order.CustomerOrderSummaryDto;
+import com.jivRas.groceries.dto.order.DeliveryOrderDto;
 import com.jivRas.groceries.entity.Payment;
 
 import jakarta.transaction.Transactional;
@@ -310,6 +312,134 @@ public class OrderService {
                 .city(order.getCity())
                 .state(order.getState())
                 .pincode(order.getPincode())
+                .items(itemResponses)
+                .build();
+    }
+
+    // ──────────────────────────── Phase 6: Delivery Agent Methods ────────────────────
+
+    /**
+     * Assigns a delivery agent to an order and transitions it to OUT_FOR_DELIVERY.
+     * Called by admin / branch manager via PATCH /api/orders/{orderId}/assign-agent.
+     * Timeline entry is recorded by the controller (same pattern as updateOrderStatus).
+     *
+     * @param orderId the order to assign
+     * @param agentId numeric ID of the EmployeeUser with role DELIVERY_AGENT
+     * @param eta     estimated delivery time shown on the agent's dashboard
+     * @return the updated Order entity
+     */
+    public Order assignAgent(Long orderId, Long agentId, LocalDateTime eta) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        // Prevent re-assigning already completed or cancelled orders
+        if ("DELIVERED".equals(order.getOrderStatus()) || "CANCELLED".equals(order.getOrderStatus())) {
+            throw new IllegalStateException(
+                    "Cannot assign agent to an order with status: " + order.getOrderStatus());
+        }
+
+        // Stamp the agent and ETA, then move the order into the delivery pipeline
+        order.setDeliveryAgentId(agentId);
+        order.setEstimatedDeliveryTime(eta);
+        order.setOrderStatus("OUT_FOR_DELIVERY");
+
+        return orderRepository.save(order);
+    }
+
+    /**
+     * Returns all orders currently assigned to the given agent that are still in transit.
+     * Only OUT_FOR_DELIVERY orders are returned — delivered orders drop off automatically
+     * when markDelivered() transitions them to DELIVERED.
+     *
+     * @param agentId numeric ID of the authenticated delivery agent
+     * @return list of delivery-view DTOs, one per assigned in-transit order
+     */
+    public List<DeliveryOrderDto> getMyDeliveries(Long agentId) {
+
+        List<Order> orders = orderRepository.findByDeliveryAgentIdAndOrderStatus(
+                agentId, "OUT_FOR_DELIVERY");
+
+        List<DeliveryOrderDto> result = new ArrayList<>();
+        for (Order order : orders) {
+            result.add(toDeliveryOrderDto(order));
+        }
+        return result;
+    }
+
+    /**
+     * Marks an order as DELIVERED. Only the assigned agent may call this.
+     * Timeline entry ("Delivered by agent") is recorded by the controller.
+     *
+     * @param orderId the order to mark delivered
+     * @param agentId numeric ID of the calling delivery agent — validated against order.deliveryAgentId
+     * @return the updated Order entity
+     * @throws org.springframework.security.access.AccessDeniedException if the agent is not assigned to this order
+     * @throws IllegalStateException if the order is not currently OUT_FOR_DELIVERY
+     */
+    public Order markDelivered(Long orderId, Long agentId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        // Ownership check — only the assigned agent can mark their own delivery
+        if (!agentId.equals(order.getDeliveryAgentId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "You are not assigned to order #" + orderId);
+        }
+
+        // Guard: order must be actively out for delivery
+        if (!"OUT_FOR_DELIVERY".equals(order.getOrderStatus())) {
+            throw new IllegalStateException(
+                    "Order #" + orderId + " is not OUT_FOR_DELIVERY (current status: " + order.getOrderStatus() + ")");
+        }
+
+        order.setOrderStatus("DELIVERED");
+        return orderRepository.save(order);
+    }
+
+    /**
+     * Maps an Order entity to the slim DeliveryOrderDto shown on the agent dashboard.
+     * Uses a plain for-loop (no streams) per project convention for agent-facing code.
+     */
+    private DeliveryOrderDto toDeliveryOrderDto(Order order) {
+
+        // Build item response list and capture first item name for the summary line
+        List<OrderItemResponse> itemResponses = new ArrayList<>();
+        String firstItemName = null;
+
+        for (OrderItem item : order.getItems()) {
+            if (firstItemName == null) {
+                firstItemName = item.getProductName();
+            }
+            OrderItemResponse ir = OrderItemResponse.builder()
+                    .id(item.getId())
+                    .productId(item.getProduct() != null ? item.getProduct().getId() : null)
+                    .productName(item.getProductName())
+                    .quantityKg(item.getQuantityKg())
+                    .pricePerKg(item.getPricePerKg())
+                    .subtotal(item.getQuantityKg() * item.getPricePerKg())
+                    .build();
+            itemResponses.add(ir);
+        }
+
+        // additionalItemCount = total items minus the one shown as firstItemName
+        int additionalItemCount = order.getItems().size() > 1 ? order.getItems().size() - 1 : 0;
+
+        return DeliveryOrderDto.builder()
+                .orderId(order.getId())
+                .orderStatus(order.getOrderStatus())
+                .orderDate(order.getOrderDate())
+                .totalAmount(order.getTotalAmount())
+                .customerName(order.getCustomerName())
+                .mobile(order.getMobile())
+                .addressLine(order.getAddressLine())
+                .city(order.getCity())
+                .state(order.getState())
+                .pincode(order.getPincode())
+                .estimatedDeliveryTime(order.getEstimatedDeliveryTime())
+                .firstItemName(firstItemName)
+                .additionalItemCount(additionalItemCount)
                 .items(itemResponses)
                 .build();
     }

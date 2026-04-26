@@ -36,6 +36,7 @@ public class DataSeeder {
             seedPaymentPermissions();
             seedGuestPermissions();
             seedOrderViewAllPermissions();
+            seedDeliveryAgentPermissions();
             return;
         }
 
@@ -92,6 +93,7 @@ public class DataSeeder {
         permissions.addAll(buildPaymentPermissions());
 
         permissions.addAll(buildOrderViewAllPermissions());
+        permissions.addAll(buildDeliveryAgentPermissions());
 
         rolePermissionRepository.saveAll(permissions);
         System.out.println("[DataSeeder] Seeded " + permissions.size() + " permission entries.");
@@ -117,6 +119,14 @@ public class DataSeeder {
 
     private void seedOrderViewAllPermissions() {
         seedMissingRows("ORDER_VIEW_ALL", buildOrderViewAllPermissions());
+    }
+
+    /**
+     * Phase 6: Incrementally seeds DELIVERY_AGENT permissions.
+     * Uses narrow, role-specific actions so the agent cannot access admin order endpoints.
+     */
+    private void seedDeliveryAgentPermissions() {
+        seedMissingRows("DELIVERY_AGENT", buildDeliveryAgentPermissions());
     }
 
     /**
@@ -193,6 +203,20 @@ public class DataSeeder {
         list.add(perm("EMPLOYEE",        "ORDERS", "VIEW_ALL", true));
         list.add(perm("CUSTOMER",        "ORDERS", "VIEW_ALL", false));
         list.add(perm("GUEST",           "ORDERS", "VIEW_ALL", false));
+        return list;
+    }
+
+    /**
+     * Phase 6: Builds DELIVERY_AGENT permission rows.
+     * Two narrow actions are used instead of reusing VIEW/EDIT so the agent cannot
+     * reach admin-only endpoints (VIEW_ALL, grouped-by-category, assign-agent, etc.).
+     */
+    private List<RolePermission> buildDeliveryAgentPermissions() {
+        List<RolePermission> list = new ArrayList<>();
+        // View their own assigned deliveries (GET /api/orders/my-deliveries)
+        list.add(perm("DELIVERY_AGENT", "ORDERS", "VIEW_DELIVERIES", true));
+        // Mark an assigned order as delivered (PATCH /api/orders/{id}/mark-delivered)
+        list.add(perm("DELIVERY_AGENT", "ORDERS", "MARK_DELIVERED",  true));
         return list;
     }
 

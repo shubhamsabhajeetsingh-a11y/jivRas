@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 24px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .logo-card { background: white; border-radius: 14px; border: 1px solid #E2DDD6; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .logo-card.dark { background: #1A1A1A; border-color: #333; }
+  .logo-card.brand { background: #D57937; border-color: #BF6929; }
+  .label { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #7A7A7A; }
+  .label-light { color: rgba(255,255,255,0.5); }
+  svg { width: 180px; height: 215px; }
+</style>
+</head>
+<body>
+
+<!-- Reusable inline SVG logo -->
+<template id="logoSvg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 355">
+  <defs>
+    <radialGradient id="bg5" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#fdfaf3"/>
+      <stop offset="100%" stop-color="#ede5d0"/>
+    </radialGradient>
+    <radialGradient id="glow5" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF5CC" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#FFF5CC" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="300" height="355" fill="url(#bg5)" rx="14"/>
+  <ellipse cx="150" cy="94" rx="75" ry="60" fill="url(#glow5)"/>
+  <!-- Rays -->
+  <g transform="translate(150,97)" stroke="#D4820A" stroke-linecap="round">
+    <line x1="0" y1="-72" x2="0" y2="-54" stroke-width="3.6"/>
+    <line x1="51" y1="-51" x2="38" y2="-38" stroke-width="3.2"/>
+    <line x1="72" y1="0" x2="55" y2="0" stroke-width="3.2"/>
+    <line x1="-51" y1="-51" x2="-38" y2="-38" stroke-width="3.2"/>
+    <line x1="-72" y1="0" x2="-55" y2="0" stroke-width="3.2"/>
+    <line x1="36" y1="-62" x2="28" y2="-47" stroke-width="2.2" opacity="0.8"/>
+    <line x1="-36" y1="-62" x2="-28" y2="-47" stroke-width="2.2" opacity="0.8"/>
+    <line x1="62" y1="-36" x2="47" y2="-28" stroke-width="2.2" opacity="0.8"/>
+    <line x1="-62" y1="-36" x2="-47" y2="-28" stroke-width="2.2" opacity="0.8"/>
+    <line x1="18" y1="-71" x2="14" y2="-56" stroke-width="1.8" opacity="0.55"/>
+    <line x1="-18" y1="-71" x2="-14" y2="-56" stroke-width="1.8" opacity="0.55"/>
+    <line x1="68" y1="-18" x2="54" y2="-14" stroke-width="1.8" opacity="0.55"/>
+    <line x1="-68" y1="-18" x2="-54" y2="-14" stroke-width="1.8" opacity="0.55"/>
+  </g>
+  <!-- Stem -->
+  <line x1="150" y1="160" x2="150" y2="110" stroke="#2E6B35" stroke-width="5.5" stroke-linecap="round"/>
+  <!-- Left leaf — ellipse rotated -40deg -->
+  <ellipse cx="124" cy="127" rx="28" ry="12" fill="#2E6B35" transform="rotate(-40 124 127)"/>
+  <line x1="150" y1="144" x2="100" y2="113" stroke="#5aaa68" stroke-width="1.2" opacity="0.5" stroke-linecap="round"/>
+  <!-- Right leaf — mirror -->
+  <ellipse cx="176" cy="127" rx="28" ry="12" fill="#2E6B35" transform="rotate(40 176 127)"/>
+  <line x1="150" y1="144" x2="200" y2="113" stroke="#5aaa68" stroke-width="1.2" opacity="0.5" stroke-linecap="round"/>
+  <!-- Top centre leaf -->
+  <ellipse cx="150" cy="93" rx="12" ry="26" fill="#358045"/>
+  <line x1="150" y1="117" x2="150" y2="70" stroke="#5aaa68" stroke-width="1.2" opacity="0.6" stroke-linecap="round"/>
+  <!-- Lower buds -->
+  <ellipse cx="136" cy="146" rx="13" ry="6" fill="#4a9458" transform="rotate(-38 136 146)" opacity="0.88"/>
+  <ellipse cx="164" cy="146" rx="13" ry="6" fill="#4a9458" transform="rotate(38 164 146)" opacity="0.88"/>
+  <!-- Wordmark -->
+  <text y="194" font-family="Georgia,'Times New Roman',serif" font-size="52" font-weight="700" text-anchor="middle">
+    <tspan x="120" fill="#2E6B35">Jiv</tspan><tspan fill="#E8920A">Ras</tspan>
+  </text>
+  <!-- NATURAL -->
+  <text x="150" y="214" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="14.5" font-weight="600" fill="#2E6B35" letter-spacing="7">NATURAL</text>
+  <line x1="46" y1="207" x2="74" y2="207" stroke="#2E6B35" stroke-width="1" opacity="0.4"/>
+  <line x1="226" y1="207" x2="254" y2="207" stroke="#2E6B35" stroke-width="1" opacity="0.4"/>
+  <!-- Root motif -->
+  <g transform="translate(150,242)" fill="none" stroke="#4a6635" stroke-linecap="round" opacity="0.85">
+    <path d="M0,0 L0,22" stroke-width="2.5"/>
+    <path d="M0,8 Q-14,16 -26,12" stroke-width="2.2"/>
+    <path d="M-26,12 Q-20,20 -14,30" stroke-width="1.8"/>
+    <path d="M0,8 Q14,16 26,12" stroke-width="2.2"/>
+    <path d="M26,12 Q20,20 14,30" stroke-width="1.8"/>
+    <path d="M-10,13 Q-26,22 -36,30" stroke-width="1.7"/>
+    <path d="M10,13 Q26,22 36,30" stroke-width="1.7"/>
+    <path d="M-18,10 Q-40,14 -50,22" stroke-width="1.2" opacity="0.5"/>
+    <path d="M18,10 Q40,14 50,22" stroke-width="1.2" opacity="0.5"/>
+    <circle cx="-26" cy="12" r="3" fill="#4a6635"/>
+    <circle cx="26" cy="12" r="3" fill="#4a6635"/>
+    <circle cx="-36" cy="30" r="2" fill="#4a6635"/>
+    <circle cx="36" cy="30" r="2" fill="#4a6635"/>
+    <circle cx="0" cy="22" r="2.2" fill="#4a6635"/>
+  </g>
+  <!-- Tagline -->
+  <line x1="22" y1="316" x2="278" y2="316" stroke="#8a7050" stroke-width="0.6" opacity="0.3"/>
+  <text x="150" y="330" text-anchor="middle" font-family="Georgia,serif" font-size="9" fill="#7a6040" letter-spacing="1.5" font-style="italic" opacity="0.9">ESSENCE OF LIFE, BORN FROM THE SOIL</text>
+</svg>
+</template>
+
+<!-- On Light -->
+<div class="logo-card">
+  <span class="label">On Light</span>
+  <div id="logo-light"></div>
+</div>
+
+<!-- Original PNG -->
+<div class="logo-card">
+  <span class="label">Original PNG</span>
+  <img src="../assets/logo.png" style="width:180px;height:210px;border-radius:8px;object-fit:contain;" alt="JivRas Natural">
+</div>
+
+<!-- On Dark -->
+<div class="logo-card dark">
+  <span class="label label-light">On Dark</span>
+  <div id="logo-dark"></div>
+</div>
+
+<!-- On Brand -->
+<div class="logo-card brand">
+  <span class="label label-light">On Brand</span>
+  <div id="logo-brand"></div>
+</div>
+
+<!-- Wordmark Only -->
+<div class="logo-card" style="padding: 20px 28px;">
+  <span class="label">Wordmark Only</span>
+  <div style="font-family:'Syne',sans-serif;font-size:38px;font-weight:700;letter-spacing:-0.01em;margin-top:4px;">
+    <span style="color:#2E6B35;">Jiv</span><span style="color:#E8920A;">Ras</span>
+  </div>
+  <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:#2E6B35;margin-top:-2px;">Natural</div>
+  <div style="font-family:'DM Sans',sans-serif;font-size:10px;font-style:italic;color:#7A7A7A;margin-top:6px;text-align:center;">Essence of Life, Born from the Soil</div>
+</div>
+
+<script>
+  // Clone the template SVG into each slot
+  const tmpl = document.getElementById('logoSvg').content;
+  document.getElementById('logo-light').appendChild(tmpl.cloneNode(true));
+  document.getElementById('logo-dark').appendChild(tmpl.cloneNode(true));
+  document.getElementById('logo-brand').appendChild(tmpl.cloneNode(true));
+</script>
+</body>
+</html>

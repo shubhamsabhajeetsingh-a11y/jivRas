@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 24px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  .shadow-card { background: white; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; width: 120px; }
+  .shadow-name { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #7A7A7A; }
+  .shadow-desc { font-size: 10px; color: #7A7A7A; line-height: 1.4; }
+  .focus-demo { display: flex; flex-direction: column; gap: 8px; }
+  .input-focus { padding: 7px 12px; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: #1A1A1A; border: 1px solid #D4820A; box-shadow: 0 0 0 3px rgba(212,130,10,0.12); outline: none; background: white; width: 140px; }
+</style>
+</head>
+<body>
+  <div class="shadow-card" style="box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div class="shadow-name">xs</div>
+    <div class="shadow-desc">0 1px 3px<br>Subtle lift</div>
+  </div>
+  <div class="shadow-card" style="box-shadow: 0 4px 15px rgba(0,0,0,0.07);">
+    <div class="shadow-name">sm</div>
+    <div class="shadow-desc">0 4px 15px<br>Cards, panels</div>
+  </div>
+  <div class="shadow-card" style="box-shadow: 0 8px 24px rgba(0,0,0,0.07);">
+    <div class="shadow-name">md</div>
+    <div class="shadow-desc">0 8px 24px<br>Card hover</div>
+  </div>
+  <div class="shadow-card" style="box-shadow: 0 16px 40px rgba(0,0,0,0.05);">
+    <div class="shadow-name">lg</div>
+    <div class="shadow-desc">0 16px 40px<br>Large panels</div>
+  </div>
+  <div class="shadow-card" style="box-shadow: 0 24px 48px rgba(0,0,0,0.2);">
+    <div class="shadow-name">xl</div>
+    <div class="shadow-desc">0 24px 48px<br>Modals</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="shadow-name" style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#7A7A7A;">Focus rings</div>
+    <input class="input-focus" value="Amber focus ring" readonly>
+    <input style="padding:7px 12px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:12px;color:#1A1A1A;border:1px solid #D57937;box-shadow:0 0 0 3px rgba(213,121,55,0.15);outline:none;background:white;width:140px;" value="Accent focus ring" readonly>
+  </div>
+</body>
+</html>

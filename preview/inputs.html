@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 20px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; gap: 14px; }
+  .row { display: flex; flex-direction: column; gap: 5px; }
+  .label { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #7A7A7A; }
+  input, select { width: 280px; padding: 10px 13px; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: #1A1A1A; background: #F5F3EE; border: 1px solid #E2DDD6; outline: none; transition: border 0.2s, box-shadow 0.2s; }
+  .focused { border-color: #D4820A; box-shadow: 0 0 0 3px rgba(212,130,10,0.12); background: white; }
+  .error-input { border-color: #C0392B; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+  .error-hint { font-size: 11px; color: #C0392B; margin-top: 2px; }
+  .hint { font-size: 11px; color: #7A7A7A; margin-top: 2px; }
+  .search-wrap { position: relative; width: 280px; }
+  .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); opacity: 0.4; }
+  .search-input { width: 100%; padding: 8px 14px 8px 34px; border: 1px solid #E2DDD6; border-radius: 8px; font-size: 13px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; color: #1A1A1A; outline: none; box-sizing: border-box; }
+  hr { border: none; border-top: 1px solid #E2DDD6; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <span class="label">Default</span>
+    <input type="text" placeholder="Enter product name…">
+    <span class="hint">Branch: Nalasopara</span>
+  </div>
+  <div class="row">
+    <span class="label">Focused (Amber ring)</span>
+    <input type="text" class="focused" value="Groundnut Oil Cold-Pressed">
+  </div>
+  <div class="row">
+    <span class="label">Error State</span>
+    <input type="text" class="error-input" value="abc">
+    <span class="error-hint">Price must be a positive number.</span>
+  </div>
+  <hr>
+  <div class="row">
+    <span class="label">Search Input</span>
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" type="text" placeholder="Search products…">
+    </div>
+  </div>
+  <div class="row">
+    <span class="label">Select / Dropdown</span>
+    <select>
+      <option>Oils &amp; Fats</option>
+      <option>Grains &amp; Pulses</option>
+      <option>Dairy</option>
+    </select>
+  </div>
+</body>
+</html>

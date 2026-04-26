@@ -75,6 +75,23 @@ public class Order {
             columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
     private Boolean isGuest = false;
 
+    // ──────────── Phase 6: Delivery Agent ────────────
+
+    /**
+     * ID of the EmployeeUser (role = DELIVERY_AGENT) assigned to this order.
+     * Null until an admin/branch manager calls PATCH /api/orders/{id}/assign-agent.
+     */
+    @Column(name = "delivery_agent_id")
+    private Long deliveryAgentId;
+
+    /**
+     * Estimated delivery time set by admin when assigning an agent.
+     * Shown on the agent's dashboard so they can prioritise deliveries.
+     * Null for orders that have not yet been assigned to an agent.
+     */
+    @Column(name = "estimated_delivery_time")
+    private LocalDateTime estimatedDeliveryTime;
+
     // ──────────── Order Items ────────────
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

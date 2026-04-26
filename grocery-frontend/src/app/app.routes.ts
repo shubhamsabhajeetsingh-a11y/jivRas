@@ -48,6 +48,20 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
 
+  // Delivery agent dashboard — DELIVERY_AGENT role only (role check inside component)
+  {
+    path: 'delivery',
+    loadComponent: () => import('./delivery/delivery-dashboard.component').then(m => m.DeliveryDashboardComponent),
+    canActivate: [authGuard]
+  },
+
+  // Owner morning dashboard — SUPER_ADMIN only (role check inside component)
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./morning-dashboard/morning-dashboard.component').then(m => m.MorningDashboardComponent),
+    canActivate: [authGuard]
+  },
+
   // Default redirect
   { path: '', redirectTo: 'products', pathMatch: 'full' },
   { path: '**', redirectTo: 'products' }

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 20px; background: #F5F3EE; font-family: 'DM Sans', sans-serif; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .count-chip { background: rgba(255,255,255,0.12); padding: 1px 7px; border-radius: 10px; font-size: 11px; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; }
+  .section-badge { font-size: 11px; padding: 2px 9px; border-radius: 10px; background: #E8F0EA; color: #D57937; font-weight: 500; font-family: 'DM Sans', sans-serif; }
+  .cat-count { font-size: 11px; background: rgba(255,255,255,0.12); padding: 1px 7px; border-radius: 10px; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; }
+  .meta-chip { background: #F5F3EE; border-radius: 7px; padding: 6px 10px; text-align: center; }
+  .meta-val { font-size: 14px; font-weight: 500; font-family: 'Syne', sans-serif; color: #1A1A1A; }
+  .meta-lbl { font-size: 10px; color: #7A7A7A; margin-top: 1px; }
+  .divider { width: 1px; height: 30px; background: #E2DDD6; }
+</style>
+</head>
+<body>
+  <span class="badge" style="background:#D6F0DD;color:#1E7A35;">Active</span>
+  <span class="badge" style="background:#FEF3DC;color:#D4820A;">Inactive</span>
+  <span class="badge" style="background:#FDECEA;color:#C0392B;">Low Stock</span>
+  <span class="badge" style="background:#D6F0DD;color:#1E7A35;">In Stock</span>
+  <div class="divider"></div>
+  <span class="section-badge">12 items</span>
+  <span class="section-badge" style="background:#FEF3DC;color:#D4820A;">3 low stock</span>
+  <div class="divider"></div>
+  <div style="background:#D57937;padding:4px 8px;border-radius:8px;display:flex;gap:6px;align-items:center;">
+    <span style="font-size:12px;color:rgba(255,255,255,0.65);">Grains</span>
+    <span class="cat-count">8</span>
+  </div>
+  <div class="divider"></div>
+  <div class="meta-chip"><div class="meta-val">₹180</div><div class="meta-lbl">Price /kg</div></div>
+  <div class="meta-chip"><div class="meta-val" style="color:#1E7A35;">48</div><div class="meta-lbl">Stock kg</div></div>
+  <div class="meta-chip"><div class="meta-val" style="color:#C0392B;">3</div><div class="meta-lbl">Low stock</div></div>
+</body>
+</html>
